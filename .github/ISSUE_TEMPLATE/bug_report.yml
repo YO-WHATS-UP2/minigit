@@ -1,0 +1,32 @@
+name: Bug report
+description: minigit did something wrong or crashed
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you run, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: The exact commands, starting from `minigit init` in an empty folder.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: git
+    attributes:
+      label: What does real Git do?
+      description: If you can, run the same steps with `git` and paste its output.
+      render: shell
+  - type: input
+    id: env
+    attributes:
+      label: OS and Python version
+      placeholder: "Windows 11, Python 3.12"
+    validations:
+      required: true

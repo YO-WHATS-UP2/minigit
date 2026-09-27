@@ -1,0 +1,21 @@
+name: Feature / new command
+description: Suggest a Git command or option minigit should support
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What should minigit be able to do?
+      description: Which git command or flag? Show example usage and output.
+    validations:
+      required: true
+  - type: textarea
+    id: how
+    attributes:
+      label: How does real Git do it?
+      description: Links to the Git docs or internals are very welcome.
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: What is the smallest useful version of this? What can be left for a follow-up issue?
