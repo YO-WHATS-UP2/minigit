@@ -54,7 +54,8 @@ minigit cat-file -p HEAD           # look inside the commit you just made
 | `cat-file -t/-s/-p` | ✅ Done | Look inside any object |
 | `add <paths>` | ✅ Done | Stage files and directories |
 | `commit -m` | ✅ Done | Record a snapshot |
-| `log`, `status`, `branch`, `checkout`, `diff`, `tag`, `rm`, `reset`, `merge`, … | 🚧 [Open issues](../../issues) | **This is where you come in** |
+| `tag [-d]` | ✅ Done | Create, list or delete tags |
+| `log`, `status`, `branch`, `checkout`, `diff`, `rm`, `reset`, `merge`, … | 🚧 [Open issues](../../issues) | **This is where you come in** |
 
 ## How Git works, in about a minute
 
