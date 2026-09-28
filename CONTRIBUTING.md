@@ -9,7 +9,7 @@ Thanks for being here! This guide takes you from zero to a merged pull request. 
    ```bash
    git clone https://github.com/<your-username>/minigit.git
    cd minigit
-   git remote add upstream https://github.com/<org>/minigit.git
+   git remote add upstream https://github.com/YO-WHATS-UP2/minigit.git
    ```
 3. **Create a virtual environment and install:**
    ```bash
