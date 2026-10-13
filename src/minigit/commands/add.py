@@ -22,6 +22,9 @@ def configure(parser):
 def run(args, repo):
     index = Index.load(repo)
     for raw in args.paths:
+        _stage_deletions(index, repo, raw)
+        if not Path(raw).exists():
+            continue
         for path in _expand(repo, raw):
             sha = write_object(repo, (repo.worktree / path).read_bytes(), "blob")
             index.add(IndexEntry(FILE_MODE, sha, path))
@@ -29,11 +32,27 @@ def run(args, repo):
     return 0
 
 
+def _stage_deletions(index, repo, raw):
+    """Remove staged entries under ``raw`` whose files no longer exist on disk.
+
+    Raises if ``raw`` doesn't exist and nothing staged matches it.
+    """
+    relative = repo_relative(repo, raw)
+    deleted = [
+        e.path
+        for e in index
+        if (relative == "" or e.path == relative or e.path.startswith(relative + "/"))
+        and not (repo.worktree / e.path).exists()
+    ]
+    for path in deleted:
+        index.remove(path)
+    if not deleted and not Path(raw).exists():
+        raise MinigitError(f"pathspec '{raw}' did not match any files")
+
+
 def _expand(repo, raw):
     """Turn one path argument into the list of files it names."""
     path = Path(raw)
-    if not path.exists():
-        raise MinigitError(f"pathspec '{raw}' did not match any files")
     relative = repo_relative(repo, path)
     if not path.is_dir():
         return [relative]

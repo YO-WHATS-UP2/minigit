@@ -116,6 +116,15 @@ def test_add_directory_recursively(repo, run, write):
     assert len(Index.load(repo)) == 3
 
 
+def test_add_stages_deletion_of_removed_file(repo, run, write):
+    write("hello.txt", "hello\n")
+    write("keep.txt", "keep\n")
+    run("add", ".")
+    (repo.worktree / "hello.txt").unlink()
+    assert run("add", ".").code == 0
+    assert [e.path for e in Index.load(repo)] == ["keep.txt"]
+
+
 def test_add_updates_changed_file(repo, run, write):
     write("hello.txt", "hello\n")
     run("add", "hello.txt")
