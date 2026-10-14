@@ -72,7 +72,7 @@ commit fb23685 ──► tree afbdd27 ──┬─► blob ce01362  "hello\n"   
 - A **commit** is a snapshot: one root tree, plus parent commit(s), author and message.
 - A **branch** is a file containing a commit SHA. `HEAD` says which branch you're on.
 
-That's all of it. Every command in Git (and minigit) reads or moves these pieces around. For the full tour of the code, read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+That's all of it. Every command in Git (and minigit) reads or moves these pieces around. Try the [hands-on internals walkthrough](docs/internals-walkthrough.md) to see them appear on disk, or read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for a tour of the code.
 
 ## Contributing
 

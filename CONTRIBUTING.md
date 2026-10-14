@@ -41,7 +41,7 @@ git checkout -b 12-log-command      # <issue number>-<short-description>
 
 Then:
 
-- **Read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** and, if you're adding a command, **[docs/adding-a-command.md](docs/adding-a-command.md)**.
+- **Read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**. If Git's objects and refs are new to you, try the [internals walkthrough](docs/internals-walkthrough.md). If you're adding a command, read **[docs/adding-a-command.md](docs/adding-a-command.md)**.
 - **Match real Git.** When in doubt, run the same thing with `git` and copy its behaviour and output format. The Git docs (`git help <command>`) are your spec.
 - **Reuse the helpers** in `objects.py`, `refs.py`, `index.py` and `worktree.py` instead of reading `.minigit` files by hand. If you need a new helper that other commands could use too, add it to the right module (with a test).
 - **Report errors with `raise MinigitError("...")`.** Don't `print` errors and `exit` yourself.
