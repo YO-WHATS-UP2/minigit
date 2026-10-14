@@ -55,6 +55,16 @@ ruff check .
 ruff format .
 ```
 
+### Checking test coverage
+
+To see which lines your changes leave untested, run:
+
+```bash
+pytest --cov=minigit --cov-report=term-missing
+```
+
+The `Missing` column lists the line numbers that no test reaches. CI runs this on Ubuntu / Python 3.13 and fails if total coverage drops below 90%.
+
 ### Commit messages
 
 Write short, present-tense summaries that say *what* changed:
