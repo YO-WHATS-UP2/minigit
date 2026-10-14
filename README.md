@@ -80,6 +80,7 @@ We'd love your help, especially if this is your first open-source contribution.
 
 1. Read **[CONTRIBUTING.md](CONTRIBUTING.md)** for setup, the workflow and PR rules.
 2. Work through **[docs/adding-a-command.md](docs/adding-a-command.md)**, a 15-minute tutorial.
+3. Explore Git internals with **[docs/internals-walkthrough.md](docs/internals-walkthrough.md)**, a hands-on tour of objects and refs.
 3. Pick an issue labelled [`good first issue`](../../issues?q=is%3Aopen+label%3A%22good+first+issue%22) and comment to claim it.
 
 ## Project layout
