@@ -1,5 +1,7 @@
 """End-to-end tests for the built-in commands."""
 
+import pytest
+
 from minigit.index import Index
 from minigit.objects import flatten_tree, read_commit
 from minigit.refs import head_commit
@@ -52,6 +54,97 @@ def test_reinit_keeps_data(repo, run):
     result = run("init")
     assert "Reinitialized existing" in result.out
     assert (repo.gitdir / "HEAD").read_text() == "ref: refs/heads/dev\n"
+
+
+@pytest.mark.parametrize("option", ["-b", "--initial-branch"])
+@pytest.mark.parametrize("branch", ["trunk", "feature/login"])
+def test_init_with_initial_branch(workdir, run, option, branch):
+    result = run("init", option, branch, "project")
+    assert result.code == 0
+    assert "Initialized empty minigit repository" in result.out
+    assert result.err == ""
+    assert (workdir / "project" / ".minigit" / "HEAD").read_text() == (
+        f"ref: refs/heads/{branch}\n"
+    )
+
+
+@pytest.mark.parametrize(
+    "branch",
+    [
+        "",
+        "bad name",
+        "bad..name",
+        "-bad",
+        "bad\tname",
+        "bad\nname",
+        "bad\x7fname",
+        "/bad",
+        "bad/",
+        "bad//name",
+        ".bad",
+        "bad/.name",
+        "bad.",
+        "bad.lock",
+        "bad.lock/name",
+        "bad@{name",
+        "bad~name",
+        "bad^name",
+        "bad:name",
+        "bad?name",
+        "bad*name",
+        "bad[name",
+        "bad\\name",
+    ],
+)
+def test_init_rejects_invalid_initial_branch(workdir, run, branch):
+    result = run("init", f"--initial-branch={branch}", "project")
+    assert result.code == 128
+    assert result.out == ""
+    assert "fatal: invalid initial branch name:" in result.err
+    assert not (workdir / "project").exists()
+
+
+@pytest.mark.parametrize("option", ["-q", "--quiet"])
+def test_init_quiet(workdir, run, option):
+    result = run("init", option, "-b", "trunk", "project")
+    assert result.code == 0
+    assert result.out == result.err == ""
+    assert (workdir / "project" / ".minigit" / "HEAD").read_text() == ("ref: refs/heads/trunk\n")
+    result = run("init", option, "project")
+    assert result.code == 0
+    assert result.out == result.err == ""
+
+
+@pytest.mark.parametrize("quiet", [False, True])
+@pytest.mark.parametrize("head", ["ref: refs/heads/dev\n", "a" * 40 + "\n"])
+@pytest.mark.parametrize("branch", ["trunk", "bad name"])
+def test_reinit_ignores_initial_branch(repo, run, quiet, head, branch):
+    (repo.gitdir / "HEAD").write_text(head)
+    result = run("init", "--initial-branch", branch, *(["--quiet"] if quiet else []))
+    assert result.code == 0
+    assert result.err == f"warning: re-init: ignored --initial-branch={branch}\n"
+    if quiet:
+        assert result.out == ""
+    else:
+        assert "Reinitialized existing" in result.out
+    assert (repo.gitdir / "HEAD").read_text() == head
+
+
+def test_quiet_init_still_reports_errors(workdir, run):
+    result = run("init", "-q", "-b", "bad name")
+    assert result.code == 128
+    assert result.out == ""
+    assert "fatal: invalid initial branch name:" in result.err
+    assert not (workdir / ".minigit").exists()
+
+
+def test_commit_on_initial_branch(workdir, run, write):
+    assert run("init", "-b", "feature/login").code == 0
+    write("hello.txt", "hello\n")
+    assert run("add", "hello.txt").code == 0
+    result = run("commit", "-m", "first")
+    assert result.code == 0
+    assert result.out.startswith("[feature/login (root-commit) ")
 
 
 # -- hash-object / cat-file ---------------------------------------------------

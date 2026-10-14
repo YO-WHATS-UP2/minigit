@@ -44,3 +44,13 @@ def test_git_does_not_choke_on_minigit_index(repo, run, write, git):
     # staging area instead of aborting with "index file corrupt".
     _make_history(run, write)
     git("status")
+
+
+def test_git_reads_initial_branch(workdir, run, write, git):
+    assert run("init", "-b", "feature/login").code == 0
+    assert git("symbolic-ref", "HEAD") == "refs/heads/feature/login\n"
+    write("hello.txt", "hello\n")
+    assert run("add", "hello.txt").code == 0
+    assert run("commit", "-m", "First commit").code == 0
+    assert git("rev-parse", "feature/login") == git("rev-parse", "HEAD")
+    git("fsck", "--strict", "--no-dangling")

@@ -49,7 +49,7 @@ minigit cat-file -p HEAD           # look inside the commit you just made
 
 | Command | Status | |
 |---|---|---|
-| `init` | ✅ Done | Create a repository |
+| `init [-b <branch>] [-q] [directory]` | ✅ Done | Create a repository; choose the initial branch or run quietly |
 | `hash-object [-w]` | ✅ Done | Hash a file, optionally store it |
 | `cat-file -t/-s/-p` | ✅ Done | Look inside any object |
 | `add <paths>` | ✅ Done | Stage files and directories |

@@ -27,6 +27,22 @@ _SYMBOLIC_PREFIX = "ref: "
 _FULL_SHA_RE = re.compile(r"[0-9a-f]{40}")
 
 
+def validate_branch_name(name: str) -> None:
+    """Reject names that cannot safely name a branch ref, including a leading dash."""
+    if (
+        not name
+        or name.startswith("-")
+        or name.endswith(".")
+        or ".." in name
+        or "@{" in name
+        or any(ord(char) < 33 or ord(char) == 127 or char in "~^:?*[\\" for char in name)
+        or any(
+            not part or part.startswith(".") or part.endswith(".lock") for part in name.split("/")
+        )
+    ):
+        raise MinigitError(f"invalid initial branch name: '{name}'")
+
+
 def _ref_file(repo: Repository, ref: str):
     if ".." in ref.split("/") or ref.startswith("/"):
         raise MinigitError(f"invalid ref name: {ref}")
