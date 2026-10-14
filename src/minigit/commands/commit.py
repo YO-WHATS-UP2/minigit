@@ -7,7 +7,7 @@
 
 from minigit.errors import MinigitError
 from minigit.identity import author_signature
-from minigit.index import Index
+from minigit.index import Index, IndexEntry
 from minigit.objects import Commit, read_commit, write_object
 from minigit.refs import current_branch, head_commit, update_head
 
@@ -23,6 +23,12 @@ def configure(parser):
         required=True,
         help="commit message (repeat -m for more paragraphs)",
     )
+    parser.add_argument(
+        "-a",
+        "--all",
+        action="store_true",
+        help="stage modified and deleted tracked files before committing",
+    )
 
 
 def run(args, repo):
@@ -31,6 +37,9 @@ def run(args, repo):
         raise MinigitError("aborting commit due to empty commit message")
 
     index = Index.load(repo)
+    if args.all:
+        _stage_tracked_changes(repo, index)
+        index.save(repo)
     tree = index.write_tree(repo)
     parent = head_commit(repo)
     if (parent is None and len(index) == 0) or (
@@ -54,3 +63,18 @@ def run(args, repo):
     root = " (root-commit)" if parent is None else ""
     print(f"[{branch}{root} {sha[:7]}] {message.splitlines()[0]}")
     return 0
+
+
+def _stage_tracked_changes(repo, index):
+    """Re-stage every file already in the index: drop deleted ones, update changed ones.
+
+    Untracked files are never touched, same as ``git commit -a``.
+    """
+    for entry in list(index):
+        path = repo.worktree / entry.path
+        if not path.is_file():
+            index.remove(entry.path)
+            continue
+        sha = write_object(repo, path.read_bytes(), "blob")
+        if sha != entry.sha:
+            index.add(IndexEntry(entry.mode, sha, entry.path))

@@ -1,5 +1,7 @@
 """End-to-end tests for the built-in commands."""
 
+import hashlib
+
 from minigit.index import Index
 from minigit.objects import flatten_tree, read_commit
 from minigit.refs import head_commit
@@ -199,6 +201,22 @@ def test_multiple_messages_become_paragraphs(repo, run, write):
     run("add", "a.txt")
     run("commit", "-m", "Title", "-m", "Body text.")
     assert read_commit(repo, head_commit(repo)).message == "Title\n\nBody text.\n"
+
+
+def test_commit_all_stages_modified_and_deleted_but_not_untracked(repo, run, write, workdir):
+    write("keep.txt", "keep\n")
+    write("change.txt", "old\n")
+    write("gone.txt", "bye\n")
+    run("add", ".")
+    run("commit", "-m", "first")
+    write("change.txt", "new\n")
+    (workdir / "gone.txt").unlink()
+    write("untracked.txt", "not added\n")
+    result = run("commit", "-a", "-m", "Update")
+    assert result.code == 0
+    files = flatten_tree(repo, read_commit(repo, head_commit(repo)).tree)
+    assert sorted(files) == ["change.txt", "keep.txt"]
+    assert files["change.txt"].sha == hashlib.sha1(b"blob 4\x00new\n").hexdigest()
 
 
 def test_empty_message_rejected(repo, run, write):
