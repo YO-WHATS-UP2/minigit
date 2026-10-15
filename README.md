@@ -54,6 +54,7 @@ minigit cat-file -p HEAD           # look inside the commit you just made
 | `cat-file -t/-s/-p` | ✅ Done | Look inside any object |
 | `add <paths>` | ✅ Done | Stage files and directories |
 | `commit -m` | ✅ Done | Record a snapshot |
+| `ls-files [-s]` | ✅ Done | Show staged files |
 | `log`, `status`, `branch`, `checkout`, `diff`, `tag`, `rm`, `reset`, `merge`, … | 🚧 [Open issues](../../issues) | **This is where you come in** |
 
 ## How Git works, in about a minute
@@ -72,7 +73,7 @@ commit fb23685 ──► tree afbdd27 ──┬─► blob ce01362  "hello\n"   
 - A **commit** is a snapshot: one root tree, plus parent commit(s), author and message.
 - A **branch** is a file containing a commit SHA. `HEAD` says which branch you're on.
 
-That's all of it. Every command in Git (and minigit) reads or moves these pieces around. For the full tour of the code, read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+That's all of it. Every command in Git (and minigit) reads or moves these pieces around. Try the [hands-on internals walkthrough](docs/internals-walkthrough.md) to see them appear on disk, or read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for a tour of the code.
 
 ## Contributing
 

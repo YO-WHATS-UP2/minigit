@@ -1,5 +1,7 @@
 """End-to-end tests for the built-in commands."""
 
+import hashlib
+
 import pytest
 
 from minigit.index import Index
@@ -209,6 +211,15 @@ def test_add_directory_recursively(repo, run, write):
     assert len(Index.load(repo)) == 3
 
 
+def test_add_stages_deletion_of_removed_file(repo, run, write):
+    write("hello.txt", "hello\n")
+    write("keep.txt", "keep\n")
+    run("add", ".")
+    (repo.worktree / "hello.txt").unlink()
+    assert run("add", ".").code == 0
+    assert [e.path for e in Index.load(repo)] == ["keep.txt"]
+
+
 def test_add_updates_changed_file(repo, run, write):
     write("hello.txt", "hello\n")
     run("add", "hello.txt")
@@ -292,6 +303,22 @@ def test_multiple_messages_become_paragraphs(repo, run, write):
     run("add", "a.txt")
     run("commit", "-m", "Title", "-m", "Body text.")
     assert read_commit(repo, head_commit(repo)).message == "Title\n\nBody text.\n"
+
+
+def test_commit_all_stages_modified_and_deleted_but_not_untracked(repo, run, write, workdir):
+    write("keep.txt", "keep\n")
+    write("change.txt", "old\n")
+    write("gone.txt", "bye\n")
+    run("add", ".")
+    run("commit", "-m", "first")
+    write("change.txt", "new\n")
+    (workdir / "gone.txt").unlink()
+    write("untracked.txt", "not added\n")
+    result = run("commit", "-a", "-m", "Update")
+    assert result.code == 0
+    files = flatten_tree(repo, read_commit(repo, head_commit(repo)).tree)
+    assert sorted(files) == ["change.txt", "keep.txt"]
+    assert files["change.txt"].sha == hashlib.sha1(b"blob 4\x00new\n").hexdigest()
 
 
 def test_empty_message_rejected(repo, run, write):
