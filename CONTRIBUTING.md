@@ -52,7 +52,8 @@ Before you push, run:
 ```bash
 pytest
 ruff check .
-ruff format .
+ruff format --check .
+mypy src/
 ```
 
 ### Checking test coverage

@@ -1,5 +1,6 @@
 """minigit init: create an empty repository."""
 
+import argparse
 import sys
 from pathlib import Path
 
@@ -10,13 +11,13 @@ HELP = "Create an empty minigit repository"
 NEEDS_REPO = False
 
 
-def configure(parser):
+def configure(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("directory", nargs="?", default=".", help="where to create it")
     parser.add_argument("-b", "--initial-branch", metavar="BRANCH", help="initial branch name")
     parser.add_argument("-q", "--quiet", action="store_true", help="suppress the success message")
 
 
-def run(args, repo):
+def run(args: argparse.Namespace, repo: Repository | None) -> int:
     path = Path(args.directory)
     existed = (path / GITDIR_NAME / "HEAD").is_file()
     branch = args.initial_branch if args.initial_branch is not None else DEFAULT_BRANCH

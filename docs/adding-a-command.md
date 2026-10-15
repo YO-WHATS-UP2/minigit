@@ -14,15 +14,19 @@ Create `src/minigit/commands/whereami.py`:
 ```python
 """minigit whereami: show the current branch and commit (tutorial example)."""
 
+import argparse
+
+from minigit.repo import Repository
+
 NAME = "whereami"
 HELP = "Show the current branch and commit"
 
 
-def configure(parser):
+def configure(parser: argparse.ArgumentParser) -> None:
     pass  # no options yet
 
 
-def run(args, repo):
+def run(args: argparse.Namespace, repo: Repository | None) -> int:
     print("hello from whereami")
     return 0
 ```
@@ -42,18 +46,22 @@ You didn't register the command anywhere. `commands/__init__.py` finds every fil
 Don't read `.minigit/HEAD` yourself. The helpers in `refs.py` and `objects.py` already know how:
 
 ```python
+import argparse
+
 from minigit.objects import read_commit
+from minigit.repo import Repository
 from minigit.refs import current_branch, head_commit
 
 NAME = "whereami"
 HELP = "Show the current branch and commit"
 
 
-def configure(parser):
+def configure(parser: argparse.ArgumentParser) -> None:
     pass
 
 
-def run(args, repo):
+def run(args: argparse.Namespace, repo: Repository | None) -> int:
+    assert repo is not None
     branch = current_branch(repo) or "(detached HEAD)"
     sha = head_commit(repo)
     if sha is None:
@@ -71,11 +79,12 @@ Try it in a playground repo before and after making a commit.
 `configure` receives a normal [argparse](https://docs.python.org/3/library/argparse.html) parser:
 
 ```python
-def configure(parser):
+def configure(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--full", action="store_true", help="print the full SHA")
 
 
-def run(args, repo):
+def run(args: argparse.Namespace, repo: Repository | None) -> int:
+    assert repo is not None
     ...
     shown = sha if args.full else sha[:7]
 ```
@@ -121,7 +130,7 @@ The fixtures (defined in `tests/conftest.py`) do the setup:
 | `write(path, content)` | creates a file (and folders) in the working tree |
 | `git(*args)` | runs **real** git on the same repo (skipped if git isn't installed) |
 
-Run `pytest tests/test_whereami.py -v`.
+Run `pytest tests/test_whereami.py -v`, then `mypy src/` to check the command's types.
 
 ## Step 6: clean up
 
@@ -137,5 +146,5 @@ rm src/minigit/commands/whereami.py tests/test_whereami.py
 - [ ] Behaviour and output match real `git` for the cases the issue lists
 - [ ] Errors use `MinigitError`
 - [ ] Tests cover the normal case, and at least one edge case (empty repo, missing file, detached HEAD, …)
-- [ ] `pytest`, `ruff check .` and `ruff format --check .` all pass
+- [ ] `pytest`, `ruff check .`, `ruff format --check .` and `mypy src/` all pass
 - [ ] The "What works" table in `README.md` is updated
