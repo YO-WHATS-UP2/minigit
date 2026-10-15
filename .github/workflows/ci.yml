@@ -31,4 +31,12 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - run: pip install -e ".[dev]"
       # Real git is preinstalled on GitHub runners, so the compatibility tests run here.
-      - run: pytest -v
+      - name: Run tests
+        if: ${{ !(matrix.os == 'ubuntu-latest' && matrix.python-version == '3.13') }}
+        run: pytest -v
+      - name: Run tests with coverage
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == '3.13' }}
+        run: pytest -v --cov=minigit --cov-report=term-missing --cov-fail-under=90
+      - name: Add coverage summary to the job summary
+        if: ${{ always() && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.13' }}
+        run: coverage report --format=markdown >> "$GITHUB_STEP_SUMMARY"
