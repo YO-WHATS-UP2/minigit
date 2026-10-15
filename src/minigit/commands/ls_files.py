@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
+import argparse
+
 from minigit.index import Index
+from minigit.repo import Repository
 
 NAME = "ls-files"
 HELP = "Show information about files in the staging area"
 
 
-def configure(parser):
+def configure(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "-s",
         "--stage",
@@ -17,7 +20,8 @@ def configure(parser):
     )
 
 
-def run(args, repo):
+def run(args: argparse.Namespace, repo: Repository | None) -> int:
+    assert repo is not None
     index = Index.load(repo)
     for entry in index:
         if args.stage:

@@ -4,17 +4,19 @@ Each commit stores its parent's SHA, so the history is a linked list you
 follow backwards from HEAD.
 """
 
+import argparse
 from datetime import datetime, timedelta, timezone
 
 from minigit.errors import MinigitError
 from minigit.objects import read_commit
 from minigit.refs import current_branch, head_commit
+from minigit.repo import Repository
 
 NAME = "log"
 HELP = "Show commit history"
 
 
-def configure(parser):
+def configure(parser: argparse.ArgumentParser) -> None:
     pass
 
 
@@ -32,7 +34,8 @@ def _format_date(signature) -> str:
     return f"{moment:%a %b} {moment.day:>2} {moment:%H:%M:%S %Y} {signature.tz}"
 
 
-def run(args, repo):
+def run(args: argparse.Namespace, repo: Repository | None) -> int:
+    assert repo is not None
     sha = head_commit(repo)
     if sha is None:
         branch = current_branch(repo) or "HEAD"

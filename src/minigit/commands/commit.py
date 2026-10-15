@@ -5,18 +5,21 @@
 3. Move the current branch forward to the new commit.
 """
 
+import argparse
+
 from minigit import color
 from minigit.errors import MinigitError
 from minigit.identity import author_signature
 from minigit.index import Index, IndexEntry
 from minigit.objects import Commit, read_commit, write_object
 from minigit.refs import current_branch, head_commit, update_head
+from minigit.repo import Repository
 
 NAME = "commit"
 HELP = "Record the staged changes as a new commit"
 
 
-def configure(parser):
+def configure(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "-m",
         "--message",
@@ -32,7 +35,8 @@ def configure(parser):
     )
 
 
-def run(args, repo):
+def run(args: argparse.Namespace, repo: Repository | None) -> int:
+    assert repo is not None
     message = "\n\n".join(m.strip() for m in args.message).strip()
     if not message:
         raise MinigitError("aborting commit due to empty commit message")
