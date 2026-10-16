@@ -30,7 +30,6 @@ def main(argv: list[str] | None = None) -> int:
 
     arg_list = argv if argv is not None else sys.argv[1:]
 
-    """Checking if a command is not valid and returns suggestions if any"""
     if arg_list != []:
         if not arg_list[0].startswith("-") and arg_list[0] not in commands:
             matches = difflib.get_close_matches(arg_list[0], commands.keys(), n=len(commands))
@@ -45,8 +44,6 @@ def main(argv: list[str] | None = None) -> int:
                 print("The most similar commands are", file=sys.stderr)
                 for i in matches:
                     print("    " + i, file=sys.stderr)
-            else:
-                pass
             return 1
     args = parser.parse_args(argv)
     if args.command is None:
