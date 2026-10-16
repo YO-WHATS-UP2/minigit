@@ -56,6 +56,8 @@ minigit cat-file -p HEAD           # look inside the commit you just made
 | `commit -m` | ✅ Done | Record a snapshot |
 | `ls-files [-s]` | ✅ Done | Show staged files |
 | `tag [-d]` | ✅ Done | Create, list or delete tags |
+| `write-tree` | ✅ Done | Write the staged snapshot as trees and print the root SHA |
+| `commit-tree <tree> [-p <parent>]... -m <message>` | ✅ Done | Create a commit object without moving a branch |
 | `log`, `status`, `branch`, `checkout`, `diff`, `rm`, `reset`, `merge`, … | 🚧 [Open issues](../../issues) | **This is where you come in** |
 
 ## How Git works, in about a minute
