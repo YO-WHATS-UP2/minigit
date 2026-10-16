@@ -31,7 +31,7 @@ def validate_branch_name(name: str):
 
     for s in [" ", ".."]:
         if s in name:
-            raise MinigitError("Branch name should not contain '{s}' in it")
+            raise MinigitError(f"Branch name should not contain '{s}' in it")
     if name.startswith("-"):
         raise MinigitError("Branch name cannot start with '-'")
     if name.endswith("/"):
