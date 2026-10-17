@@ -1,6 +1,8 @@
 """End-to-end tests for the built-in commands."""
 
 import hashlib
+import io
+import sys
 
 import pytest
 
@@ -162,6 +164,43 @@ def test_hash_object(repo, run, write):
 
 def test_hash_object_missing_file(repo, run):
     assert run("hash-object", "nope.txt").code == 128
+
+
+def test_hash_object_multiple_files(run, write):
+    write("first.txt", "hello\n")
+    write("second.txt", "world\n")
+
+    result = run("hash-object", "first.txt", "second.txt")
+    second_blob = hashlib.sha1(b"blob 6\0world\n").hexdigest()
+
+    assert result.code == 0
+    assert result.out == HELLO_BLOB + "\n" + second_blob + "\n"
+
+
+def test_hash_object_stdin(run, monkeypatch):
+    monkeypatch.setattr(sys, "stdin", io.TextIOWrapper(io.BytesIO(b"hello\n")))
+    result = run("hash-object", "--stdin")
+    assert result.code == 0
+    assert result.out == HELLO_BLOB + "\n"
+
+
+def test_hash_object_stdin_write(repo, run, monkeypatch):
+    monkeypatch.setattr(sys, "stdin", io.TextIOWrapper(io.BytesIO(b"hello\n")))
+    result = run("hash-object", "--stdin", "-w")
+    assert result.code == 0
+    assert result.out == HELLO_BLOB + "\n"
+    assert (repo.gitdir / "objects" / HELLO_BLOB[:2] / HELLO_BLOB[2:]).is_file()
+
+
+def test_hash_object_stdin_binary(run, monkeypatch):
+    data = b"\x00\xffA"
+    monkeypatch.setattr(sys, "stdin", io.TextIOWrapper(io.BytesIO(data)))
+    result = run("hash-object", "--stdin")
+    header = b"blob " + str(len(data)).encode() + b"\0"
+    expected = hashlib.sha1(header + data).hexdigest()
+
+    assert result.code == 0
+    assert result.out == expected + "\n"
 
 
 def test_cat_file_blob(repo, run, write):
