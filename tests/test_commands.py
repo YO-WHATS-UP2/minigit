@@ -325,3 +325,53 @@ def test_empty_message_rejected(repo, run, write):
     write("a.txt", "1")
     run("add", "a.txt")
     assert run("commit", "-m", "   ").code == 128
+
+
+# -- count-objects ------------------------------------------------------------
+
+
+def test_count_objects_empty(repo, run):
+    result = run("count-objects")
+    assert result.code == 0
+    assert result.out == "0 objects, 0 kilobytes\n"
+    assert run("count-objects", "-v").out == "count: 0\nsize: 0\n"
+
+
+def test_count_objects_normal_and_verbose(repo, run, write):
+    write("hello.txt", "hello\n")
+    run("add", "hello.txt")
+    run("commit", "-m", "First commit")
+
+    result = run("count-objects")
+    assert result.code == 0
+    assert result.out.startswith("3 objects, ")
+    assert result.out.endswith(" kilobytes\n")
+
+    lines = run("count-objects", "-v").out.splitlines()
+    assert lines[0] == "count: 3"
+    assert lines[1].startswith("size: ")
+
+
+def test_count_objects_deduplication(repo, run, write):
+    write("file1.txt", "identical content\n")
+    run("add", "file1.txt")
+    assert run("count-objects", "-v").out.splitlines()[0] == "count: 1"
+
+    # Adding a different file with identical content should NOT create another object
+    write("file2.txt", "identical content\n")
+    run("add", "file2.txt")
+    assert run("count-objects", "-v").out.splitlines()[0] == "count: 1"
+
+
+def test_count_objects_ignores_tmp_files(repo, run, write):
+    write("file.txt", "content\n")
+    run("add", "file.txt")
+
+    before = run("count-objects", "-v").out
+
+    # Leftover .tmp file inside the object directory should not affect count or size
+    fanout = next(d for d in (repo.gitdir / "objects").iterdir() if d.is_dir() and len(d.name) == 2)
+    (fanout / "temp.tmp").write_bytes(b"x" * 8192)
+
+    after = run("count-objects", "-v").out
+    assert after == before
