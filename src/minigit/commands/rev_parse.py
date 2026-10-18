@@ -1,8 +1,8 @@
 """minigit rev-parse: print the full SHA a name refers to.
 
-    minigit rev-parse HEAD              # full SHA of the current commit
-    minigit rev-parse --short main      # first 7 characters of main's SHA
-    minigit rev-parse HEAD main v1.0    # one SHA per line
+minigit rev-parse HEAD              # full SHA of the current commit
+minigit rev-parse --short main      # first 7 characters of main's SHA
+minigit rev-parse HEAD main v1.0    # one SHA per line
 """
 
 from minigit.refs import resolve
