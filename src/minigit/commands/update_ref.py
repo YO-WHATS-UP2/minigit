@@ -26,7 +26,7 @@ def run(args: argparse.Namespace, repo: Repository) -> None:
     if args.delete:
         path = repo.gitdir / args.ref
         if path.exists():
-            path.unlink() # Deletes the file
+            path.unlink()  # Deletes the file
         return
 
     # Validation for Update Mode
@@ -41,7 +41,9 @@ def run(args: argparse.Namespace, repo: Repository) -> None:
     if args.oldvalue:
         current_sha = refs.read_ref(repo, args.ref)
         if current_sha != args.oldvalue:
-            raise MinigitError(f"cannot lock ref '{args.ref}': is at {current_sha} but expected {args.oldvalue}")
+            raise MinigitError(
+                f"cannot lock ref '{args.ref}': is at {current_sha} but expected {args.oldvalue}"
+            )
 
     # Perform the Update
     refs.update_ref(repo, args.ref, sha)

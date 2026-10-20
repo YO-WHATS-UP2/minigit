@@ -56,6 +56,8 @@ minigit cat-file -p HEAD           # look inside the commit you just made
 | `commit -m` | ✅ Done | Record a snapshot |
 | `ls-files [-s]` | ✅ Done | Show staged files |
 | `tag [-d]` | ✅ Done | Create, list or delete tags |
+| `symbolic-ref` | ✅ Done | Read or change what HEAD points to |
+| `update-ref [-d]` | ✅ Done | Update the object name stored in a ref safely |
 | `log`, `status`, `branch`, `checkout`, `diff`, `rm`, `reset`, `merge`, … | 🚧 [Open issues](../../issues) | **This is where you come in** |
 
 ## How Git works, in about a minute
