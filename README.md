@@ -56,6 +56,7 @@ minigit cat-file -p HEAD           # look inside the commit you just made
 | `commit -m` | ✅ Done | Record a snapshot |
 | `ls-files [-s]` | ✅ Done | Show staged files |
 | `tag [-d]` | ✅ Done | Create, list or delete tags |
+| `grep [-i -n -c -l -w] <pattern> [<revision>]` | ✅ Done | Search the contents of tracked files |
 | `count-objects [-v]` | ✅ Done | Count unpacked objects and report disk consumption |
 | `log`, `status`, `branch`, `checkout`, `diff`, `rm`, `reset`, `merge`, … | 🚧 [Open issues](../../issues) | **This is where you come in** |
 

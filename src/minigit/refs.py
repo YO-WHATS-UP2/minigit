@@ -25,6 +25,7 @@ if TYPE_CHECKING:
 
 _SYMBOLIC_PREFIX = "ref: "
 _FULL_SHA_RE = re.compile(r"[0-9a-f]{40}")
+_SHORT_SHA_RE = re.compile(r"[0-9a-f]{4,39}")
 
 
 def validate_branch_name(name: str) -> None:
@@ -144,4 +145,22 @@ def resolve(repo: Repository, name: str) -> str:
             return sha
     if _FULL_SHA_RE.fullmatch(name) and object_exists(repo, name):
         return name
+    if _SHORT_SHA_RE.fullmatch(name):
+        matches = _objects_with_prefix(repo, name)
+        if len(matches) == 1:
+            return matches[0]
+        if len(matches) > 1:
+            raise MinigitError(f"short SHA {name} is ambiguous")
     raise MinigitError(f"unknown revision: {name}")
+
+
+def _objects_with_prefix(repo: Repository, prefix: str) -> list[str]:
+    """Return every stored object SHA that starts with ``prefix`` (4 to 39 hex characters)."""
+    fan_out = repo.gitdir / "objects" / prefix[:2]
+    if not fan_out.is_dir():
+        return []
+    return [
+        prefix[:2] + path.name
+        for path in fan_out.iterdir()
+        if path.is_file() and path.name.startswith(prefix[2:])
+    ]
