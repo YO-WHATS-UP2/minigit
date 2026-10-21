@@ -6,16 +6,18 @@ This is the best command for exploring how Git stores things. Try:
     minigit cat-file -p <tree sha from it>   # its top-level directory
 """
 
+import argparse
 import sys
 
 from minigit.objects import parse_tree, read_object
 from minigit.refs import resolve
+from minigit.repo import Repository
 
 NAME = "cat-file"
 HELP = "Show the type, size or content of an object"
 
 
-def configure(parser):
+def configure(parser: argparse.ArgumentParser) -> None:
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("-t", dest="show", action="store_const", const="type", help="show type")
     mode.add_argument("-s", dest="show", action="store_const", const="size", help="show size")
@@ -23,7 +25,8 @@ def configure(parser):
     parser.add_argument("object", help="a SHA, branch, tag or HEAD")
 
 
-def run(args, repo):
+def run(args: argparse.Namespace, repo: Repository | None) -> int:
+    assert repo is not None
     obj_type, data = read_object(repo, resolve(repo, args.object))
     if args.show == "type":
         print(obj_type)

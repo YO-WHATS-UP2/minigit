@@ -19,9 +19,12 @@ def configure(parser):
 
 def _header(repo) -> list[str]:
     branch = current_branch(repo)
+    sha = head_commit(repo)
     if branch is None:
-        return [f"HEAD detached at {head_commit(repo)[:7]}"]
-    if head_commit(repo) is None:
+        # A detached HEAD always holds a commit SHA.
+        assert sha is not None
+        return [f"HEAD detached at {sha[:7]}"]
+    if sha is None:
         # Git puts a blank line on either side of this line.
         return [f"On branch {branch}", "", "No commits yet", ""]
     return [f"On branch {branch}"]

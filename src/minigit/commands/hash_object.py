@@ -1,5 +1,6 @@
 """minigit hash-object: compute a file's object SHA, and optionally store it."""
 
+import argparse
 import sys
 from pathlib import Path
 
@@ -12,14 +13,14 @@ HELP = "Compute the object ID of a file, and optionally store it"
 NEEDS_REPO = False  # only -w needs a repository
 
 
-def configure(parser):
+def configure(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("file", nargs="*")
     parser.add_argument("--stdin", action="store_true", help="read from standard input")
     parser.add_argument("-w", dest="write", action="store_true", help="write the object")
     parser.add_argument("-t", dest="type", default="blob", choices=OBJECT_TYPES)
 
 
-def run(args, repo):
+def run(args: argparse.Namespace, repo: Repository | None) -> int:
     if args.stdin and args.file:
         raise MinigitError("--stdin cannot be used with file paths")
 

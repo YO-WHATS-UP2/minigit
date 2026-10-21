@@ -4,22 +4,25 @@ For each file, ``add`` stores its content as a blob object and records
 ``path -> blob sha`` in the index.
 """
 
+import argparse
 from pathlib import Path
 
 from minigit.errors import MinigitError
 from minigit.index import Index, IndexEntry
 from minigit.objects import FILE_MODE, write_object
+from minigit.repo import Repository
 from minigit.worktree import iter_files, repo_relative
 
 NAME = "add"
 HELP = "Add file contents to the staging area"
 
 
-def configure(parser):
+def configure(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("paths", nargs="+", help="files or directories to stage")
 
 
-def run(args, repo):
+def run(args: argparse.Namespace, repo: Repository | None) -> int:
+    assert repo is not None
     index = Index.load(repo)
     for raw in args.paths:
         _stage_deletions(index, repo, raw)
