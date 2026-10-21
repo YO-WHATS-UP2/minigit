@@ -14,7 +14,7 @@ Thanks for being here! This guide takes you from zero to a merged pull request. 
 3. **Create a virtual environment and install:**
    ```bash
    python -m venv .venv
-   source .venv/bin/activate        # Windows: .venv\Scripts\activate
+   source .venv/bin/activate        # Windows: .venv\\Scripts\\activate
    pip install -e ".[dev]"
    ```
 4. **Check everything works:**
@@ -78,7 +78,24 @@ Fix add crashing on empty directories
 
 Several small commits are fine. We'll squash them when merging.
 
-## 4. Open a pull request
+## 4. Preview the documentation site
+
+Install the separate documentation dependencies from the repository root:
+
+```bash
+pip install -e ".[docs]"
+mkdocs serve
+```
+
+Open the local URL printed by MkDocs (normally `http://127.0.0.1:8000/`). Before submitting documentation changes, check the production build and its links:
+
+```bash
+mkdocs build --strict
+```
+
+The generated site is written to `site/`. Documentation dependencies are optional and are not installed with minigit's runtime package.
+
+## 5. Open a pull request
 
 ```bash
 git push origin 12-log-command
@@ -90,7 +107,7 @@ Then open a PR on GitHub **against `main`** and fill in the template:
 - Paste a short **terminal session showing your feature working**.
 - Keep it to **one issue per PR**. Unrelated fixes go in their own PR.
 
-## 5. Review
+## 6. Review
 
 - A mentor will review within a few days. **Review comments are normal**; almost every PR gets some, and they aren't a sign you did badly.
 - Push new commits to the same branch to address feedback, then reply to each comment.

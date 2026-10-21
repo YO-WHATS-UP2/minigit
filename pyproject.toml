@@ -13,6 +13,7 @@ dependencies = []
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "ruff>=0.6", "pytest-cov>=5", "mypy>=1.11"]
+docs = ["mkdocs-material>=9.5,<10"]
 
 [project.scripts]
 minigit = "minigit.cli:main"

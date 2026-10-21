@@ -1,6 +1,6 @@
 # Explore Git internals with minigit
 
-First follow the [quick start](../README.md#quick-start) to clone and install
+First follow the [quick start](index.md#quick-start) to clone and install
 minigit. Activate that virtual environment before starting the tour: it puts
 `minigit` on your `PATH`. This session uses `tree` to show folders; you can
 also open them in a file browser. Turn on **Show hidden files** so `.minigit`

@@ -1,0 +1,25 @@
+site_name: minigit
+site_description: A small Git, rebuilt from scratch in Python so you can see how it works.
+site_url: https://yo-whats-up2.github.io/minigit/
+repo_url: https://github.com/YO-WHATS-UP2/minigit
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  features:
+    - content.code.copy
+
+nav:
+  - Home: index.md
+  - Tutorial: adding-a-command.md
+  - Architecture: ARCHITECTURE.md
+  - Contributing: contributing.md
+
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - toc:
+      permalink: true
+
+strict: true
