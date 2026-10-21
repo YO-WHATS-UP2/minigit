@@ -4,8 +4,9 @@ def test_unknown_command_suggests_similar_command(workdir, run):
     assert result.out == ""
     assert result.err == (
         "minigit: 'comit' is not a minigit command. See 'minigit --help'.\n"
-        "The most similar command is\n"
+        "The most similar commands are\n"
         "    commit\n"
+        "    commit-tree\n"
     )
 
 
