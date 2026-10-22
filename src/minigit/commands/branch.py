@@ -1,8 +1,7 @@
 """branch: create a new branches or lists current ones."""
 
 from minigit.errors import MinigitError
-from minigit.refs import iter_refs, resolve, update_ref, current_branch
-
+from minigit.refs import current_branch, iter_refs, resolve, update_ref
 
 NAME = "branch"
 HELP = "Create new branches or list current ones"
