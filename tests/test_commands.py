@@ -2,6 +2,8 @@
 
 import hashlib
 import io
+import os
+import subprocess
 import sys
 
 import pytest
@@ -414,3 +416,101 @@ def test_count_objects_ignores_tmp_files(repo, run, write):
 
     after = run("count-objects", "-v").out
     assert after == before
+
+
+# -- cat-file -e / --batch-check ----------------------------------------------
+
+
+def test_cat_file_exists(repo, run, write):
+    write("hello.txt", "hello\n")
+    run("hash-object", "-w", "hello.txt")
+
+    result = run("cat-file", "-e", HELLO_BLOB)
+    assert result.code == 0
+    assert result.out == ""
+    assert result.err == ""
+
+
+def test_cat_file_exists_missing_sha(repo, run, write):
+    write("hello.txt", "hello\n")
+    run("hash-object", "-w", "hello.txt")
+    missing = HELLO_BLOB[:-1] + ("0" if HELLO_BLOB[-1] != "0" else "1")
+
+    result = run("cat-file", "-e", missing)
+    assert result.code == 1
+    assert result.out == ""
+    assert result.err == ""
+
+
+def test_cat_file_exists_bad_name(repo, run):
+    result = run("cat-file", "-e", "nope")
+    assert result.code == 1
+    assert result.out == ""
+    assert result.err == ""
+
+
+def test_cat_file_exists_head(repo, run, write):
+    write("hello.txt", "hello\n")
+    run("add", ".")
+    run("commit", "-m", "first")
+
+    assert run("cat-file", "-e", "HEAD").code == 0
+
+
+def _stdin(monkeypatch, text: str) -> None:
+    monkeypatch.setattr(sys, "stdin", io.TextIOWrapper(io.BytesIO(text.encode())))
+
+
+def _batch_names(run) -> str:
+    sha = run("rev-parse", "HEAD").out.strip()
+    return f"{sha}\nHEAD\nmain\nnope\n{HELLO_BLOB}\n"
+
+
+def _real_git_batch(workdir, names: str) -> str:
+    env = {**os.environ, "GIT_DIR": str(workdir / ".minigit"), "GIT_WORK_TREE": str(workdir)}
+    done = subprocess.run(
+        ["git", "cat-file", "--batch-check"],
+        cwd=workdir,
+        env=env,
+        input=names,
+        text=True,
+        capture_output=True,
+        check=True,
+    )
+    return done.stdout
+
+
+def test_cat_file_batch_check(repo, run, write, monkeypatch):
+    write("hello.txt", "hello\n")
+    run("add", ".")
+    run("commit", "-m", "first")
+    names = _batch_names(run)
+    _stdin(monkeypatch, names)
+
+    result = run("cat-file", "--batch-check")
+    assert result.code == 0
+    lines = result.out.splitlines()
+    sha = names.splitlines()[0]
+    assert lines[0].startswith(f"{sha} commit ")
+    assert lines[1].startswith(f"{sha} commit ")
+    assert lines[2].startswith(f"{sha} commit ")
+    assert lines[3] == "nope missing"
+    assert lines[4] == f"{HELLO_BLOB} blob 6"
+
+
+def test_cat_file_batch_check_matches_git(repo, run, write, git, monkeypatch, workdir):
+    write("hello.txt", "hello\n")
+    run("add", ".")
+    run("commit", "-m", "first")
+    names = _batch_names(run)
+    _stdin(monkeypatch, names)
+
+    assert run("cat-file", "--batch-check").out == _real_git_batch(workdir, names)
+
+
+def test_cat_file_batch_check_empty(repo, run, monkeypatch):
+    _stdin(monkeypatch, "")
+
+    result = run("cat-file", "--batch-check")
+    assert result.code == 0
+    assert result.out == ""
