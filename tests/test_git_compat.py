@@ -4,6 +4,8 @@ These tests run the real ``git`` binary against a ``.minigit`` folder. They
 are skipped if Git isn't installed, but they always run in CI.
 """
 
+from minigit.refs import head_commit, iter_refs, read_ref
+
 
 def _make_history(run, write):
     write("hello.txt", "hello\n")
@@ -54,3 +56,15 @@ def test_git_reads_initial_branch(workdir, run, write, git):
     assert run("commit", "-m", "First commit").code == 0
     assert git("rev-parse", "feature/login") == git("rev-parse", "HEAD")
     git("fsck", "--strict", "--no-dangling")
+
+
+def test_minigit_reads_refs_packed_by_real_git(repo, run, write, git):
+    _make_history(run, write)
+    run("tag", "v1")
+    sha = git("rev-parse", "HEAD").strip()
+    git("pack-refs", "--all")
+    assert not (repo.gitdir / "refs" / "heads" / "main").exists()  # now only in packed-refs
+    assert read_ref(repo, "refs/heads/main") == sha
+    assert head_commit(repo) == sha
+    assert iter_refs(repo) == {"main": sha}
+    assert iter_refs(repo, "refs/tags") == {"v1": sha}

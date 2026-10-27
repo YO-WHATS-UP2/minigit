@@ -55,6 +55,8 @@ def _delete_tag(repo, name: str) -> int:
         raise MinigitError(f"tag '{name}' not found")
 
     tag_file = repo.gitdir / ref
+    if not tag_file.is_file():
+        raise MinigitError(f"cannot delete packed tag '{name}'")
     tag_file.unlink()
 
     # Clean up empty parent directories up to refs/tags

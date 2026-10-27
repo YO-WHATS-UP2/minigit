@@ -145,3 +145,18 @@ def test_tag_git_compat(repo, run, write, git):
     # Real git can list and resolve the tag created by minigit
     assert git("tag").strip() == "v1.0"
     assert git("rev-parse", "v1.0").strip() == head_commit(repo)
+
+
+def test_tag_lists_and_protects_packed_tags(repo, run):
+    (repo.gitdir / "packed-refs").write_text("2" * 40 + " refs/tags/v1.0\n")
+    assert run("tag").out == "v1.0\n"
+    result = run("tag", "v1.0", "HEAD")
+    assert result.code != 0
+    assert "already exists" in result.err
+
+
+def test_tag_delete_packed_tag_is_a_clear_error(repo, run):
+    (repo.gitdir / "packed-refs").write_text("2" * 40 + " refs/tags/v1.0\n")
+    result = run("tag", "-d", "v1.0")
+    assert result.code != 0
+    assert "cannot delete packed tag" in result.err

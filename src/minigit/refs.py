@@ -50,6 +50,27 @@ def _ref_file(repo: Repository, ref: str):
     return repo.gitdir / ref
 
 
+def _read_packed_refs(repo: Repository) -> dict[str, str]:
+    """Return ``{full ref name: sha}`` from ``.minigit/packed-refs`` (empty if it doesn't exist).
+
+    Each line is ``<sha> <refname>``. Lines starting with ``#`` are a header, and lines
+    starting with ``^`` hold the commit an annotated tag points to. Neither is a ref, so
+    both are skipped.
+    """
+    path = repo.gitdir / "packed-refs"
+    if not path.is_file():
+        return {}
+    packed: dict[str, str] = {}
+    for line in path.read_text().splitlines():
+        if not line or line.startswith(("#", "^")):
+            continue
+        sha, _, name = line.partition(" ")
+        if not _FULL_SHA_RE.fullmatch(sha) or not name:
+            raise MinigitError(f"broken packed-refs file: '{line}'")
+        packed[name] = sha
+    return packed
+
+
 def read_ref(repo: Repository, ref: str) -> str | None:
     """Return the SHA that ``ref`` (e.g. ``"refs/heads/main"`` or ``"HEAD"``) points to.
 
@@ -58,7 +79,7 @@ def read_ref(repo: Repository, ref: str) -> str | None:
     """
     path = _ref_file(repo, ref)
     if not path.is_file():
-        return None
+        return _read_packed_refs(repo).get(ref)
     content = path.read_text().strip()
     if content.startswith(_SYMBOLIC_PREFIX):
         return read_ref(repo, content[len(_SYMBOLIC_PREFIX) :])
@@ -78,12 +99,15 @@ def iter_refs(repo: Repository, prefix: str = "refs/heads") -> dict[str, str]:
     ``iter_refs(repo, "refs/tags")`` lists tags.
     """
     base = _ref_file(repo, prefix)
-    if not base.is_dir():
-        return {}
-    refs = {}
-    for path in sorted(p for p in base.rglob("*") if p.is_file()):
-        refs[path.relative_to(base).as_posix()] = path.read_text().strip()
-    return refs
+    refs: dict[str, str] = {}
+    for name, sha in _read_packed_refs(repo).items():
+        if name.startswith(prefix + "/"):
+            refs[name[len(prefix) + 1 :]] = sha
+    if base.is_dir():
+        for path in base.rglob("*"):
+            if path.is_file():
+                refs[path.relative_to(base).as_posix()] = path.read_text().strip()
+    return dict(sorted(refs.items()))
 
 
 # ---------------------------------------------------------------------------
