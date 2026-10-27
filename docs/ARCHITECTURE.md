@@ -81,7 +81,8 @@ Things that trip people up:
 
 ## The working tree (`worktree.py`)
 
-- `iter_files(repo)` yields every tracked-or-not file as a sorted, forward-slash, repo-relative path. It already skips `.minigit` and `.git`. **Ignore rules will go here**, so every command gets them automatically.
+- `iter_files(repo)` yields every tracked-or-not file as a sorted, forward-slash, repo-relative path. It skips `.minigit`, `.git` and anything matched by `.minigitignore`, so every command gets the ignore rules automatically.
+- `ignore_patterns(repo)` and `is_ignored(path, patterns)` are for paths the user names directly (`add secret.txt` never goes through `iter_files`). `is_ignored` also checks the path's parent directories.
 - `repo_relative(repo, path)` converts what the user typed (relative to their current folder) into a repo path, and rejects paths outside the repo.
 
 ## Commands (`commands/`)
@@ -104,3 +105,4 @@ These differ from real Git on purpose. Some of them are open issues if you want 
 - Every file is staged as mode `100644` (no executable bit or symlinks yet).
 - Only loose objects; no packfiles.
 - No `packed-refs`, reflog, hooks, submodules or remotes.
+- `.minigitignore` is read from the repository root only, and supports `*`, `?`, `[...]`, a trailing `/` and a `/` anchor. Negation (`!pattern`), `**` and ignore files in subdirectories aren't supported yet.
