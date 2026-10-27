@@ -52,7 +52,7 @@ minigit cat-file -p HEAD           # look inside the commit you just made
 | `init [-b <branch>] [-q] [directory]` | ✅ Done | Create a repository; choose the initial branch or run quietly |
 | `hash-object [-w]` | ✅ Done | Hash a file, optionally store it |
 | `cat-file -t/-s/-p` | ✅ Done | Look inside any object |
-| `add <paths>` | ✅ Done | Stage files and directories |
+| `add <paths>` | ✅ Done | Stage files and directories, skipping anything listed in `.minigitignore` |
 | `commit -m` | ✅ Done | Record a snapshot |
 | `ls-files [-s]` | ✅ Done | Show staged files |
 | `tag [-d]` | ✅ Done | Create, list or delete tags |
@@ -98,7 +98,7 @@ src/minigit/
     objects.py      blobs, trees, commits: reading, writing, hashing
     index.py        the staging area
     refs.py         branches, tags, HEAD, and resolving names to SHAs
-    worktree.py     listing the files in the working tree
+    worktree.py     listing the files in the working tree, minus .minigitignore matches
     repo.py         finding / creating the .minigit directory
     identity.py     who is committing, and when
 tests/              pytest tests, one file per module / command
