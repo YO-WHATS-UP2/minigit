@@ -96,3 +96,75 @@ def test_too_short_sha_is_not_a_revision(repo):
 def test_ref_names_cannot_escape_gitdir(repo):
     with pytest.raises(MinigitError, match="invalid ref name"):
         read_ref(repo, "../../etc/passwd")
+
+
+# ---------------------------------------------------------------------------
+# packed-refs
+# ---------------------------------------------------------------------------
+
+PACKED_REFS = (
+    "# pack-refs with: peeled fully-peeled sorted\n"
+    + "1" * 40
+    + " refs/heads/old-feature\n"
+    + "2" * 40
+    + " refs/tags/v1.0\n"
+    + "^"
+    + "3" * 40
+    + "\n"
+)
+
+
+def write_packed_refs(repo, text=PACKED_REFS):
+    (repo.gitdir / "packed-refs").write_text(text)
+
+
+def test_read_ref_from_packed_refs(repo):
+    write_packed_refs(repo)
+    assert read_ref(repo, "refs/heads/old-feature") == "1" * 40
+    assert read_ref(repo, "refs/tags/v1.0") == "2" * 40
+    assert read_ref(repo, "refs/heads/missing") is None
+
+
+def test_no_packed_refs_file_is_fine(repo):
+    assert read_ref(repo, "refs/heads/old-feature") is None
+    assert iter_refs(repo) == {}
+
+
+def test_loose_ref_wins_over_packed(repo):
+    write_packed_refs(repo)
+    update_ref(repo, "refs/heads/old-feature", "9" * 40)
+    assert read_ref(repo, "refs/heads/old-feature") == "9" * 40
+    assert iter_refs(repo) == {"old-feature": "9" * 40}
+
+
+def test_iter_refs_merges_loose_and_packed(repo):
+    write_packed_refs(repo)
+    update_ref(repo, "refs/heads/main", "4" * 40)
+    update_ref(repo, "refs/tags/v2.0", "5" * 40)
+    assert iter_refs(repo) == {"main": "4" * 40, "old-feature": "1" * 40}
+    # The "^" line is not a ref, and each tag shows up exactly once.
+    assert iter_refs(repo, "refs/tags") == {"v1.0": "2" * 40, "v2.0": "5" * 40}
+
+
+def test_iter_refs_with_only_packed_refs(repo):
+    # `git pack-refs --all` removes the loose files, so the folder can be gone.
+    (repo.gitdir / "refs" / "heads").rmdir()
+    write_packed_refs(repo)
+    assert iter_refs(repo) == {"old-feature": "1" * 40}
+
+
+def test_resolve_finds_packed_refs(repo):
+    write_packed_refs(repo)
+    assert resolve(repo, "v1.0") == "2" * 40
+    assert resolve(repo, "old-feature") == "1" * 40
+
+
+def test_head_follows_packed_branch(repo):
+    write_packed_refs(repo, "4" * 40 + " refs/heads/main\n")
+    assert head_commit(repo) == "4" * 40
+
+
+def test_broken_packed_refs_is_an_error(repo):
+    write_packed_refs(repo, "not-a-sha refs/heads/x\n")
+    with pytest.raises(MinigitError, match="broken packed-refs"):
+        read_ref(repo, "refs/heads/x")
