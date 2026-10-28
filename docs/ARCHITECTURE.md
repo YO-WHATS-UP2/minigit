@@ -101,6 +101,6 @@ Things that trip people up:
 These differ from real Git on purpose. Some of them are open issues if you want to close the gap:
 
 - The index is text (`minigit-index`), not Git's binary `DIRC` format, and stores no file timestamps. Real Git therefore sees an empty staging area in a minigit repo: `git log`, `git show` and `git fsck` work, but `git status` shows every file as deleted-and-untracked.
-- Every file is staged as mode `100644` (no executable bit or symlinks yet).
+- Only regular files (`100644`) and executable files (`100755`) are supported (no symlinks yet). On Windows, new files are staged as `100644` and already-staged modes are preserved.
 - Only loose objects; no packfiles.
 - No `packed-refs`, reflog, hooks, submodules or remotes.

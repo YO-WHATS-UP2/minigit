@@ -8,8 +8,8 @@ import sys
 
 import pytest
 
-from minigit.index import Index
-from minigit.objects import flatten_tree, read_commit
+from minigit.index import Index, IndexEntry
+from minigit.objects import EXEC_MODE, FILE_MODE, flatten_tree, read_commit
 from minigit.refs import head_commit
 
 HELLO_BLOB = "ce013625030ba8dba906f756967f9e9ca394464a"
@@ -287,6 +287,39 @@ def test_add_binary_file(repo, run, write):
     run("add", "image.bin")
     sha = Index.load(repo).get("image.bin").sha
     assert run("cat-file", "-s", sha).out == "256\n"
+
+
+def test_add_regular_file_mode(repo, run, write):
+    write("hello.txt", "hello\n")
+    run("add", "hello.txt")
+    entry = Index.load(repo).get("hello.txt")
+    assert entry.mode == FILE_MODE
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="Windows has no executable bit")
+def test_add_executable_file(repo, run, write):
+    path = repo.worktree / "run.sh"
+    write("run.sh", "#!/bin/sh\necho hi\n")
+    os.chmod(path, 0o755)
+    run("add", "run.sh")
+    assert Index.load(repo).get("run.sh").mode == EXEC_MODE
+
+    os.chmod(path, 0o644)
+    run("add", "run.sh")
+    assert Index.load(repo).get("run.sh").mode == FILE_MODE
+
+
+def test_add_preserves_staged_mode_on_windows(repo, run, write, monkeypatch):
+    monkeypatch.setattr(sys, "platform", "win32")
+    write("script.sh", "echo 1\n")
+    index = Index.load(repo)
+    index.add(IndexEntry(EXEC_MODE, "0" * 40, "script.sh"))
+    index.save(repo)
+
+    write("script.sh", "echo 2\n")
+    run("add", "script.sh")
+    entry = Index.load(repo).get("script.sh")
+    assert entry.mode == EXEC_MODE
 
 
 # -- commit -------------------------------------------------------------------
