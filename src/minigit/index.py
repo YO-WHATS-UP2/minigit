@@ -61,7 +61,12 @@ class Index:
             raise MinigitError(f"unrecognised index file format in {path}")
         entries = []
         for line in lines[1:]:
-            mode, sha, file_path = line.split(" ", 2)
+            try:
+                mode, sha, file_path = line.split(" ", 2)
+            except ValueError:
+                raise MinigitError(
+                    f"corrupt line in {path}: {line!r} is not '<mode> <sha> <path>'"
+                ) from None
             entries.append(IndexEntry(mode, sha, file_path))
         return cls(entries)
 
@@ -90,6 +95,14 @@ class Index:
         removes a staged file called ``a``, and staging a file ``a`` removes
         everything staged under ``a/``.
         """
+        if entry.path.splitlines() != [entry.path]:
+            # The index stores one entry per line, so a name with a line break
+            # in it ("a\nb.txt" is a legal Linux file name) would silently split
+            # into two lines and corrupt the file for every later command.
+            raise MinigitError(
+                f"cannot stage {entry.path!r}: file names containing line breaks"
+                " are not supported by the index format"
+            )
         parts = entry.path.split("/")
         for depth in range(1, len(parts)):
             self._entries.pop("/".join(parts[:depth]), None)
