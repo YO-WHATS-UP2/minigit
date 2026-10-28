@@ -1,7 +1,10 @@
+import argparse
+
 import pytest
 
+from minigit.commands import discover
 from minigit.errors import MinigitError
-from minigit.index import INDEX_FILE, Index, IndexEntry
+from minigit.index import HEADER, INDEX_FILE, Index, IndexEntry
 from minigit.objects import flatten_tree
 
 SHA = "ce013625030ba8dba906f756967f9e9ca394464a"
@@ -49,3 +52,29 @@ def test_write_tree_nests_directories(repo):
 
 def test_empty_index_writes_empty_tree(repo):
     assert Index().write_tree(repo) == "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
+
+
+def test_line_break_in_path_is_rejected():
+    # A newline (or any str line break) in a file name would silently split
+    # the entry into two lines and corrupt the index for every later command.
+    for bad in ["a\nb.txt", "a\rb", "a\vb", "a\x85b", "a b"]:
+        index = Index()
+        with pytest.raises(MinigitError, match="line breaks"):
+            index.add(IndexEntry("100644", SHA, bad))
+
+
+def test_line_break_in_path_via_add_command(repo):
+    (repo.worktree / "we\nird.txt").write_text("x")
+    (repo.worktree / "ok.txt").write_text("y")
+    add = discover()["add"].run
+    with pytest.raises(MinigitError, match="line breaks"):
+        add(argparse.Namespace(paths=["we\nird.txt", "ok.txt"]), repo)
+    # The staging area stays usable: nothing was written for the bad name.
+    assert list(Index.load(repo)) == []
+    assert (repo.worktree / ".minigit" / "minigit-index").exists() is False
+
+
+def test_corrupt_index_line_is_a_minigit_error(repo):
+    (repo.gitdir / INDEX_FILE).write_text(f"{HEADER}\nnot-a-valid-line\n")
+    with pytest.raises(MinigitError, match="corrupt line"):
+        Index.load(repo)
