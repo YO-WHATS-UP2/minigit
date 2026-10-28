@@ -47,6 +47,11 @@ _SUFFIXES = ((".tar.gz", "tar.gz"), (".tgz", "tar.gz"), (".tar", "tar"), (".zip"
 # The zip format cannot store dates before 1980-01-01 (00:00:00 UTC).
 _ZIP_EPOCH = 315532800
 
+# ...and its DOS date field stops at 2107 (1980 + 127). Both bounds must be
+# clamped or zipfile raises for a commit whose timestamp falls outside them
+# instead of the archive command reporting an error.
+_ZIP_MAX_EPOCH = 4354819199  # 2107-12-31 23:59:59 UTC
+
 # One file to archive: (name inside the archive, is executable, content).
 _Item = tuple[str, bool, bytes]
 
@@ -106,7 +111,10 @@ def _items(repo: Repository, tree_sha: str, prefix: str) -> Iterator[_Item]:
 
 def _zip_date(timestamp: int) -> tuple[int, int, int, int, int, int]:
     # UTC, so the archive is the same on every machine whatever its timezone.
-    moment = time.gmtime(max(timestamp, _ZIP_EPOCH))
+    # Clamped at both ends (like the tar writers, which accept any timestamp
+    # but keep archives byte-identical for a given commit): dates outside the
+    # DOS field's range would make zipfile raise a raw struct error.
+    moment = time.gmtime(min(max(timestamp, _ZIP_EPOCH), _ZIP_MAX_EPOCH))
     return (
         moment.tm_year,
         moment.tm_mon,
