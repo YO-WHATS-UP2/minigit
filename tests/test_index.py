@@ -1,4 +1,5 @@
 import argparse
+import os
 
 import pytest
 
@@ -63,6 +64,7 @@ def test_line_break_in_path_is_rejected():
             index.add(IndexEntry("100644", SHA, bad))
 
 
+@pytest.mark.skipif(os.name == "nt", reason="file names cannot contain line breaks on Windows")
 def test_line_break_in_path_via_add_command(repo):
     (repo.worktree / "we\nird.txt").write_text("x")
     (repo.worktree / "ok.txt").write_text("y")
