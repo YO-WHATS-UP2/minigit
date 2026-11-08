@@ -73,6 +73,7 @@ def test_delete_tag(repo, run, write):
     run("add", "a.txt")
     run("commit", "-m", "first")
     sha = head_commit(repo)
+    assert sha is not None
 
     run("tag", "v1.0")
     assert (repo.gitdir / "refs" / "tags" / "v1.0").is_file()
@@ -94,6 +95,7 @@ def test_resolve_tag_via_cat_file(repo, run, write):
     run("add", "a.txt")
     run("commit", "-m", "first commit")
     sha = head_commit(repo)
+    assert sha is not None
 
     run("tag", "v1.0")
     result = run("cat-file", "-p", "v1.0")
@@ -117,6 +119,16 @@ def test_tag_invalid_revision_fails(repo, run, write):
     result = run("tag", "v1.0", "nonexistent-branch-or-sha")
     assert result.code == 128
     assert "unknown revision: nonexistent-branch-or-sha" in result.err
+
+
+def test_tag_rejects_non_sha_file_as_revision(repo, run):
+    (repo.gitdir / "config").write_text("[core]\nrepositoryformatversion = 0\n")
+
+    result = run("tag", "badtag", "config")
+
+    assert result.code == 128
+    assert "unknown revision: config" in result.err
+    assert not (repo.gitdir / "refs" / "tags" / "badtag").exists()
 
 
 def test_tag_delete_without_name_fails(repo, run):
