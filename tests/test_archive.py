@@ -135,6 +135,16 @@ def test_zip_clamps_dates_before_1980(repo, run, write, workdir, monkeypatch):
         assert zf.getinfo("a.txt").date_time == (1980, 1, 1, 0, 0, 0)
 
 
+def test_zip_clamps_dates_after_2107(repo, run, write, workdir, monkeypatch):
+    # 4400000000 is in 2109, past the DOS date field's 2107 limit: zipfile
+    # used to escape as a raw struct error instead of the command failing.
+    monkeypatch.setenv("MINIGIT_AUTHOR_DATE", "4400000000 +0000")
+    _commit(run, write, {"a.txt": b"a\n"})
+    assert run("archive", "-o", "far.zip", "HEAD").code == 0
+    with zipfile.ZipFile(workdir / "far.zip") as zf:
+        assert zf.getinfo("a.txt").date_time == (2107, 12, 31, 23, 59, 58)
+
+
 @pytest.mark.parametrize("ext", ["zip", "tar", "tar.gz"])
 def test_same_commit_gives_identical_bytes(committed, run, workdir, monkeypatch, ext):
     # Tick the clock between runs: a gzip header that records "now" would differ.
