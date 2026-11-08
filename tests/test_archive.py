@@ -203,3 +203,72 @@ def test_failure_leaves_no_half_written_file(repo, run, workdir):
     assert "unsupported file mode 120000" in result.err
     assert (workdir / "keep.zip").read_bytes() == b"previous good archive"
     assert not (workdir / "keep.zip.tmp").exists()
+
+
+@pytest.mark.parametrize("ext", ["zip", "tar", "tar.gz"])
+@pytest.mark.parametrize("existing", ["file", "directory", "symlink"])
+@pytest.mark.parametrize("fail", [False, True])
+def test_preserves_existing_temporary_path(repo, run, write, workdir, ext, existing, fail):
+    if fail:
+        revision = _commit_tree(
+            repo, run, [(FILE_MODE, "a.txt", b"a\n"), ("120000", "link", b"a.txt")]
+        )
+    else:
+        _commit(run, write, FILES)
+        revision = "HEAD"
+
+    output = workdir / f"release.{ext}"
+    output.write_bytes(b"previous good archive")
+    sibling = output.with_name(output.name + ".tmp")
+    marker = b"unrelated contents\n"
+    if existing == "directory":
+        sibling.mkdir()
+        (sibling / "keep.txt").write_bytes(marker)
+    elif existing == "symlink":
+        victim = write("victim.txt", marker)
+        try:
+            sibling.symlink_to(victim)
+        except (OSError, NotImplementedError) as error:
+            pytest.skip(f"cannot create a symlink on this platform: {error}")
+    else:
+        sibling.write_bytes(marker)
+    before = set(workdir.iterdir())
+
+    result = run("archive", "-o", str(output), revision)
+
+    assert result.code == (128 if fail else 0)
+    if fail:
+        assert "unsupported file mode 120000" in result.err
+        assert output.read_bytes() == b"previous good archive"
+    else:
+        assert _contents(output) == FILES
+    assert not output.is_symlink()
+    if existing == "directory":
+        assert sibling.is_dir()
+        assert (sibling / "keep.txt").read_bytes() == marker
+    else:
+        assert sibling.is_symlink() == (existing == "symlink")
+        assert sibling.read_bytes() == marker
+    assert set(workdir.iterdir()) == before
+
+
+def test_missing_output_directory_reports_error(committed, run, workdir):
+    before = set(workdir.iterdir())
+    result = run("archive", "-o", "missing/release.zip", "HEAD")
+    assert result.code == 128
+    assert "cannot write 'missing/release.zip'" in result.err
+    assert set(workdir.iterdir()) == before
+
+
+def test_failed_replace_preserves_output_and_cleans_up(committed, run, workdir):
+    output = workdir / "release.zip"
+    output.mkdir()
+    (output / "keep.txt").write_bytes(b"unrelated contents\n")
+    before = set(workdir.iterdir())
+
+    result = run("archive", "-o", str(output), "HEAD")
+
+    assert result.code == 128
+    assert "cannot write" in result.err
+    assert (output / "keep.txt").read_bytes() == b"unrelated contents\n"
+    assert set(workdir.iterdir()) == before
