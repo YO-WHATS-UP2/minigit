@@ -165,7 +165,7 @@ def resolve(repo: Repository, name: str) -> str:
         return sha
     for ref in (name, f"refs/tags/{name}", f"refs/heads/{name}"):
         sha = read_ref(repo, ref)
-        if sha is not None:
+        if sha is not None and _FULL_SHA_RE.fullmatch(sha):
             return sha
     if _FULL_SHA_RE.fullmatch(name) and object_exists(repo, name):
         return name

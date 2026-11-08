@@ -65,6 +65,22 @@ def test_resolve_errors(repo):
         resolve(repo, "nope")
 
 
+def test_resolve_ignores_non_sha_file(repo):
+    (repo.gitdir / "config").write_text("[core]\nrepositoryformatversion = 0\n")
+
+    with pytest.raises(MinigitError, match="unknown revision"):
+        resolve(repo, "config")
+
+
+def test_resolve_prefers_tag_over_non_sha_file(repo):
+    expected_sha = "a" * 40
+
+    (repo.gitdir / "config").write_text("[core]\nbare = false\n")
+    update_ref(repo, "refs/tags/config", expected_sha)
+
+    assert resolve(repo, "config") == expected_sha
+
+
 def test_resolve_unique_short_sha(repo):
     blob = write_object(repo, b"short")
     assert resolve(repo, blob[:4]) == blob
