@@ -55,6 +55,7 @@ minigit cat-file -p HEAD           # look inside the commit you just made
 | `add <paths>` | ✅ Done | Stage files and directories, skipping anything listed in `.minigitignore` |
 | `commit -m` | ✅ Done | Record a snapshot |
 | `ls-files [-s]` | ✅ Done | Show staged files |
+| `ls-tree [-r] [--name-only] <tree-ish>` | ✅ Done | List a tree or commit's entries; recurse with `-r` or print only paths with `--name-only` |
 | `tag [-d]` | ✅ Done | Create, list or delete tags |
 | `grep [-i -n -c -l -w] <pattern> [<revision>]` | ✅ Done | Search the contents of tracked files |
 | `write-tree` | ✅ Done | Write the staged snapshot as trees and print the root SHA |
