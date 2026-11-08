@@ -65,6 +65,34 @@ def test_resolve_errors(repo):
         resolve(repo, "nope")
 
 
+def test_resolve_unique_short_sha(repo):
+    blob = write_object(repo, b"short")
+    assert resolve(repo, blob[:4]) == blob
+    assert resolve(repo, blob[:7]) == blob
+    assert resolve(repo, blob[:39]) == blob
+
+
+def test_resolve_ambiguous_short_sha(repo):
+    for sha in ("ab12" + "0" * 36, "ab12" + "1" * 36):
+        path = repo.gitdir / "objects" / sha[:2] / sha[2:]
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(b"")
+    with pytest.raises(MinigitError, match="ambiguous"):
+        resolve(repo, "ab12")
+
+
+def test_branch_name_beats_short_sha(repo):
+    blob = write_object(repo, b"branchy")
+    update_ref(repo, f"refs/heads/{blob[:4]}", "1" * 40)
+    assert resolve(repo, blob[:4]) == "1" * 40
+
+
+def test_too_short_sha_is_not_a_revision(repo):
+    blob = write_object(repo, b"tiny")
+    with pytest.raises(MinigitError, match="unknown revision"):
+        resolve(repo, blob[:3])
+
+
 def test_ref_names_cannot_escape_gitdir(repo):
     with pytest.raises(MinigitError, match="invalid ref name"):
         read_ref(repo, "../../etc/passwd")

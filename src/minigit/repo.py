@@ -17,6 +17,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from minigit.errors import MinigitError
+from minigit.refs import set_head, validate_branch_name
 
 GITDIR_NAME = ".minigit"
 DEFAULT_BRANCH = "main"
@@ -54,17 +55,20 @@ class Repository:
         )
 
     @classmethod
-    def create(cls, path: str | Path) -> Repository:
+    def create(cls, path: str | Path, initial_branch: str = DEFAULT_BRANCH) -> Repository:
         """Create the ``.minigit`` skeleton in ``path``.
 
-        Safe to run on an existing repository: nothing already there is overwritten.
+        ``initial_branch`` is validated and used only for a new HEAD. Safe to run
+        on an existing repository: nothing already there is overwritten.
         """
         repo = cls(path)
-        for directory in ("objects", "refs/heads", "refs/tags"):
-            (repo.gitdir / directory).mkdir(parents=True, exist_ok=True)
         head = repo.gitdir / "HEAD"
         if not head.exists():
-            head.write_text(f"ref: refs/heads/{DEFAULT_BRANCH}\n")
+            validate_branch_name(initial_branch)
+        for directory in ("objects", "refs/heads", "refs/tags"):
+            (repo.gitdir / directory).mkdir(parents=True, exist_ok=True)
+        if not head.exists():
+            set_head(repo, f"refs/heads/{initial_branch}")
         config = repo.gitdir / "config"
         if not config.exists():
             config.write_text(_DEFAULT_CONFIG)

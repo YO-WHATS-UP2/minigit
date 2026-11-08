@@ -33,8 +33,8 @@ def author_signature() -> Signature:
     date = os.environ.get("MINIGIT_AUTHOR_DATE")
     if date:
         try:
-            timestamp, tz = date.split()
-            return Signature.parse(f"{name} <{email}> {int(timestamp)} {tz}")
+            date_timestamp, tz = date.split()
+            return Signature.parse(f"{name} <{email}> {int(date_timestamp)} {tz}")
         except ValueError:
             raise MinigitError(f"invalid MINIGIT_AUTHOR_DATE: {date!r}") from None
     timestamp = int(time.time())

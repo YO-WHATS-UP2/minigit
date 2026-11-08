@@ -49,13 +49,20 @@ minigit cat-file -p HEAD           # look inside the commit you just made
 
 | Command | Status | |
 |---|---|---|
-| `init` | ✅ Done | Create a repository |
+| `init [-b <branch>] [-q] [directory]` | ✅ Done | Create a repository; choose the initial branch or run quietly |
 | `hash-object [-w]` | ✅ Done | Hash a file, optionally store it |
 | `cat-file -t/-s/-p` | ✅ Done | Look inside any object |
-| `add <paths>` | ✅ Done | Stage files and directories |
+| `add <paths>` | ✅ Done | Stage files and directories, skipping anything listed in `.minigitignore` |
 | `commit -m` | ✅ Done | Record a snapshot |
-| `branch` | ✅ Done | Creates and lists branches |
-| `log`, `status`, `checkout`, `diff`, `tag`, `rm`, `reset`, `merge`, … | 🚧 [Open issues](../../issues) | **This is where you come in** |
+| `ls-files [-s]` | ✅ Done | Show staged files |
+| `tag [-d]` | ✅ Done | Create, list or delete tags |
+| `grep [-i -n -c -l -w] <pattern> [<revision>]` | ✅ Done | Search the contents of tracked files |
+| `write-tree` | ✅ Done | Write the staged snapshot as trees and print the root SHA |
+| `commit-tree <tree> [-p <parent>]... -m <message>` | ✅ Done | Create a commit object without moving a branch |
+| `count-objects [-v]` | ✅ Done | Count unpacked objects and report disk consumption |
+| `archive [--format zip\|tar\|tar.gz] [--prefix <dir/>] -o <file> <revision>` | ✅ Done | Write the files of a commit into a `.zip`, `.tar` or `.tar.gz` without touching the working tree |
+| `branch [<name> [<start-point>]]` | ✅ Done | List branches, or create one |
+| `log`, `status`, `checkout`, `diff`, `rm`, `reset`, `merge`, … | 🚧 [Open issues](../../issues) | **This is where you come in** |
 
 ## How Git works, in about a minute
 
@@ -73,7 +80,7 @@ commit fb23685 ──► tree afbdd27 ──┬─► blob ce01362  "hello\n"   
 - A **commit** is a snapshot: one root tree, plus parent commit(s), author and message.
 - A **branch** is a file containing a commit SHA. `HEAD` says which branch you're on.
 
-That's all of it. Every command in Git (and minigit) reads or moves these pieces around. For the full tour of the code, read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+That's all of it. Every command in Git (and minigit) reads or moves these pieces around. Try the [hands-on internals walkthrough](docs/internals-walkthrough.md) to see them appear on disk, or read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for a tour of the code.
 
 ## Contributing
 
@@ -92,7 +99,7 @@ src/minigit/
     objects.py      blobs, trees, commits: reading, writing, hashing
     index.py        the staging area
     refs.py         branches, tags, HEAD, and resolving names to SHAs
-    worktree.py     listing the files in the working tree
+    worktree.py     listing the files in the working tree, minus .minigitignore matches
     repo.py         finding / creating the .minigit directory
     identity.py     who is committing, and when
 tests/              pytest tests, one file per module / command
