@@ -18,6 +18,7 @@ import gzip
 import io
 import stat
 import tarfile
+import tempfile
 import time
 import zipfile
 from collections.abc import Callable, Iterator
@@ -175,12 +176,20 @@ def run(args: argparse.Namespace, repo: Repository | None) -> int:
     timestamp = read_commit(repo, sha).committer.timestamp if obj_type == "commit" else 0
     items = _items(repo, peel_to_tree(repo, sha), prefix)
 
-    # Write next to the target and rename at the end, so a failure part-way
-    # never leaves a broken archive that looks finished.
+    # Write to a unique temporary file next to the target and rename at the end,
+    # so a failure part-way never leaves a broken archive that looks finished,
+    # and pre-existing files next to the output are preserved.
     output = Path(args.output)
-    tmp = output.with_name(output.name + ".tmp")
     try:
-        with tmp.open("wb") as out:
+        tmp_file = tempfile.NamedTemporaryFile(
+            dir=output.parent, prefix=f".{output.name}.", suffix=".tmp", delete=False
+        )
+    except OSError as error:
+        raise MinigitError(f"cannot write '{args.output}': {error.strerror or error}") from error
+
+    tmp = Path(tmp_file.name)
+    try:
+        with tmp_file as out:
             _WRITERS[archive_format](out, items, timestamp)
         tmp.replace(output)
     except OSError as error:
