@@ -1,7 +1,7 @@
 """minigit tag: create, list, or delete tags."""
 
 from minigit.errors import MinigitError
-from minigit.refs import iter_refs, read_ref, resolve, update_ref
+from minigit.refs import is_valid_ref_name, iter_refs, read_ref, resolve, update_ref
 
 NAME = "tag"
 HELP = "Create, list, or delete tags"
@@ -21,9 +21,7 @@ def run(args, repo):
             raise MinigitError("cannot specify revision when deleting a tag")
         return _delete_tag(repo, args.name)
 
-    if not args.name:
-        if args.revision:
-            raise MinigitError("cannot specify revision without tag name")
+    if args.name is None:
         return _list_tags(repo)
 
     return _create_tag(repo, args.name, args.revision)
@@ -37,6 +35,9 @@ def _list_tags(repo) -> int:
 
 
 def _create_tag(repo, name: str, revision: str | None) -> int:
+    if not is_valid_ref_name(name):
+        raise MinigitError(f"'{name}' is not a valid tag name.")
+
     ref = f"refs/tags/{name}"
     if read_ref(repo, ref) is not None:
         raise MinigitError(f"tag '{name}' already exists")

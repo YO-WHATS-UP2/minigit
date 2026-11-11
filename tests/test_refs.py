@@ -6,6 +6,7 @@ from minigit.refs import (
     current_branch,
     head_commit,
     head_target,
+    is_valid_ref_name,
     iter_refs,
     read_ref,
     resolve,
@@ -184,3 +185,43 @@ def test_broken_packed_refs_is_an_error(repo):
     write_packed_refs(repo, "not-a-sha refs/heads/x\n")
     with pytest.raises(MinigitError, match="broken packed-refs"):
         read_ref(repo, "refs/heads/x")
+
+
+@pytest.mark.parametrize(
+    "name",
+    ["main", "v1.0", "feature/login", "release/2.0/rc1", "v1.lock.bak", "lock", "v1@", "v1{x", "@"],
+)
+def test_valid_ref_names(name):
+    assert is_valid_ref_name(name)
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "",
+        "-v1",
+        "bad name",
+        "v1..2",
+        "v1.lock",
+        "v1.lock/x",
+        "v1~1",
+        "v1^",
+        "v1:x",
+        "v1?",
+        "v1*",
+        "v1[",
+        "v1\\x",
+        ".hidden",
+        "v1/.hidden",
+        "v1.",
+        "/v1",
+        "v1/",
+        "v1//x",
+        "v1@{0}",
+        "v1\tx",
+        "v1\nx",
+        "v1\x7fx",
+    ],
+)
+def test_invalid_ref_names(name):
+    assert not is_valid_ref_name(name)

@@ -1,7 +1,7 @@
 """branch: create a new branches or lists current ones."""
 
 from minigit.errors import MinigitError
-from minigit.refs import current_branch, iter_refs, resolve, update_ref
+from minigit.refs import current_branch, is_valid_ref_name, iter_refs, resolve, update_ref
 
 NAME = "branch"
 HELP = "Create new branches or list current ones"
@@ -20,28 +20,10 @@ def run(args, repo):
     return 0
 
 
-def validate_branch_name(name: str):
-    """Rejects invalid names such as
-    empty, containing spaces or ..,
-    starting with -, or ending with / or .lock
-    """
-    if not name:
-        raise MinigitError("No Branch name provided!")
-
-    for s in [" ", ".."]:
-        if s in name:
-            raise MinigitError(f"Branch name should not contain '{s}' in it")
-    if name.startswith("-"):
-        raise MinigitError("Branch name cannot start with '-'")
-    if name.endswith("/"):
-        raise MinigitError("Branch name cannot end with '/'")
-    if name.endswith(".lock"):
-        raise MinigitError("Branch name cannot end with .lock")
-
-
 def add_branch(repo, name: str, start_point=None):
     """Creates a new branch and adds it in the repo"""
-    validate_branch_name(name)
+    if not is_valid_ref_name(name):
+        raise MinigitError(f"'{name}' is not a valid branch name")
     bref = f"refs/heads/{name}"
     current_refs = iter_refs(repo)  # default is "refs/heads"
 

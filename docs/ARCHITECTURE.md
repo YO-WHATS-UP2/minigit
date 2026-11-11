@@ -78,6 +78,7 @@ Things that trip people up:
 | `update_head(repo, sha)` | move the current branch (what `commit` does) |
 | `set_head(repo, "refs/heads/x")` | switch branches (what `checkout` will do) |
 | `read_ref` / `update_ref` / `iter_refs` | work with any ref directly, e.g. `iter_refs(repo, "refs/tags")` |
+| `is_valid_ref_name(name)` | check a new branch or tag name against Git's naming rules before you write its ref |
 
 ## The working tree (`worktree.py`)
 
