@@ -28,9 +28,15 @@ _FULL_SHA_RE = re.compile(r"[0-9a-f]{40}")
 _SHORT_SHA_RE = re.compile(r"[0-9a-f]{4,39}")
 
 
-def validate_branch_name(name: str) -> None:
-    """Reject names that cannot safely name a branch ref, including a leading dash."""
-    if (
+def is_valid_ref_name(name: str) -> bool:
+    """Say whether ``name`` can name a branch or a tag.
+
+    These are Git's rules (``git help check-ref-format``), plus the leading
+    dash that ``git branch`` and ``git tag`` refuse. Check a name before
+    writing its ref: real Git ignores a ref with a broken name, and some of
+    these characters (``:``, ``?``, ``*``) can't be in a Windows file name.
+    """
+    return not (
         not name
         or name.startswith("-")
         or name.endswith(".")
@@ -40,7 +46,12 @@ def validate_branch_name(name: str) -> None:
         or any(
             not part or part.startswith(".") or part.endswith(".lock") for part in name.split("/")
         )
-    ):
+    )
+
+
+def validate_branch_name(name: str) -> None:
+    """Reject an ``init -b`` name that cannot safely name a branch ref."""
+    if not is_valid_ref_name(name):
         raise MinigitError(f"invalid initial branch name: '{name}'")
 
 

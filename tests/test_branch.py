@@ -81,6 +81,53 @@ def test_branch_rejects_invalid_names(repo, run, write):
         assert result.code == 128, f"Expected rejection for {name!r}"
 
 
+def test_branch_rejects_names_git_refuses(repo, run, write):
+    write("a.txt", "hello")
+    run("add", "a.txt")
+    run("commit", "-m", "first")
+
+    invalid_names = [
+        "v1~1",
+        "v1^",
+        "v1:x",
+        "v1?",
+        "v1*",
+        "v1[",
+        "v1\\x",
+        ".hidden",
+        "v1/.hidden",
+        "v1.",
+        "/v1",
+        "v1//x",
+        "v1@{0}",
+        "v1.lock/x",
+        "v1\tx",
+    ]
+
+    for name in invalid_names:
+        result = run("branch", name)
+        assert result.code == 128, f"Expected rejection for {name!r}"
+        assert result.err == f"fatal: '{name}' is not a valid branch name\n"
+
+    assert run("branch").out == "* main\n"
+
+
+def test_branch_accepts_valid_names(repo, run, write):
+    write("a.txt", "hello")
+    run("add", "a.txt")
+    run("commit", "-m", "first")
+
+    for name in ["feature/login", "v1.0", "wip@home"]:
+        assert run("branch", name).code == 0, f"Expected {name!r} to be accepted"
+
+    assert run("branch").out.splitlines() == [
+        "  feature/login",
+        "* main",
+        "  v1.0",
+        "  wip@home",
+    ]
+
+
 def test_branch_without_commits(repo, run):
     result = run("branch", "feature")
 

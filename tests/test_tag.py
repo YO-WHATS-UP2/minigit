@@ -1,6 +1,38 @@
 """Tests for minigit tag command."""
 
-from minigit.refs import head_commit
+import subprocess
+
+import pytest
+
+from minigit.refs import head_commit, update_ref
+
+VALID_NAMES = ["v1.0", "release/2.0", "nightly/2023/11", "v1.lock.bak", "lock", "v1@", "v1{x"]
+
+# Names real Git refuses: see `git help check-ref-format`.
+INVALID_NAMES = [
+    "",
+    "bad name",
+    "v1..2",
+    "v1.lock",
+    "v1.lock/x",
+    "v1~1",
+    "v1^",
+    "v1:x",
+    "v1?",
+    "v1*",
+    "v1[",
+    "v1\\x",
+    ".hidden",
+    "v1/.hidden",
+    "v1.",
+    "/v1",
+    "v1/",
+    "v1//x",
+    "v1@{0}",
+    "v1\tx",
+    "v1\nx",
+    "v1\x7fx",
+]
 
 
 def test_tag_creates_at_head(repo, run, write):
@@ -172,3 +204,98 @@ def test_tag_delete_packed_tag_is_a_clear_error(repo, run):
     result = run("tag", "-d", "v1.0")
     assert result.code != 0
     assert "cannot delete packed tag" in result.err
+
+
+# -- tag names ----------------------------------------------------------------
+
+
+@pytest.mark.parametrize("name", VALID_NAMES)
+def test_tag_accepts_valid_name(repo, run, write, name):
+    write("a.txt", "hello\n")
+    run("add", "a.txt")
+    run("commit", "-m", "first")
+
+    result = run("tag", name)
+    assert result.code == 0
+    assert result.err == ""
+    assert run("tag").out == f"{name}\n"
+    assert run("rev-parse", name).out == head_commit(repo) + "\n"
+
+
+@pytest.mark.parametrize("name", INVALID_NAMES)
+def test_tag_rejects_invalid_name(repo, run, write, name):
+    write("a.txt", "hello\n")
+    run("add", "a.txt")
+    run("commit", "-m", "first")
+
+    result = run("tag", name)
+    assert result.code == 128
+    assert result.out == ""
+    assert result.err == f"fatal: '{name}' is not a valid tag name.\n"
+    # Nothing was written: on Windows "v1:x" used to leave a broken tag called "v1".
+    assert list((repo.gitdir / "refs" / "tags").iterdir()) == []
+
+
+def test_tag_rejects_leading_dash(repo, run, write):
+    write("a.txt", "hello\n")
+    run("add", "a.txt")
+    run("commit", "-m", "first")
+
+    # "--" stops argparse from reading "-v1" as an option.
+    result = run("tag", "--", "-v1")
+    assert result.code == 128
+    assert result.err == "fatal: '-v1' is not a valid tag name.\n"
+    assert run("tag").out == ""
+
+
+def test_tag_invalid_name_with_revision_fails(repo, run, write):
+    write("a.txt", "hello\n")
+    run("add", "a.txt")
+    run("commit", "-m", "first")
+
+    result = run("tag", "bad name", "HEAD")
+    assert result.code == 128
+    assert "'bad name' is not a valid tag name." in result.err
+    assert run("tag").out == ""
+
+
+def test_tag_empty_name_is_not_a_request_to_list(repo, run, write):
+    write("a.txt", "hello\n")
+    run("add", "a.txt")
+    run("commit", "-m", "first")
+    run("tag", "v1.0")
+
+    result = run("tag", "")
+    assert result.code == 128
+    assert result.out == ""
+    assert result.err == "fatal: '' is not a valid tag name.\n"
+
+
+def test_tag_with_invalid_name_can_still_be_deleted(repo, run):
+    # Left behind by a minigit that didn't check tag names yet.
+    update_ref(repo, "refs/tags/bad name", "1" * 40)
+
+    result = run("tag", "-d", "bad name")
+    assert result.code == 0
+    assert run("tag").out == ""
+
+
+def test_tag_names_match_real_git(repo, run, write, git):
+    write("a.txt", "hello\n")
+    run("add", "a.txt")
+    run("commit", "-m", "first")
+
+    for name in VALID_NAMES + INVALID_NAMES:
+        ours = run("tag", name).code == 0
+        if ours:
+            run("tag", "-d", name)  # make room for real Git's tag of the same name
+        try:
+            git("tag", name)
+            theirs = True
+        except subprocess.CalledProcessError:
+            theirs = False
+        assert ours == theirs, f"minigit and git disagree about {name!r}"
+
+    # Real Git made exactly the tags minigit accepted, and both list them all.
+    assert sorted(git("tag").splitlines()) == sorted(VALID_NAMES)
+    assert run("tag").out.splitlines() == sorted(VALID_NAMES)
