@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import itertools
+import os
+import sys
 import tarfile
 import time
 import zipfile
@@ -248,3 +250,16 @@ def test_archive_preserves_preexisting_directory_at_tmp_path(committed, run, wor
     assert (workdir / "release.zip").is_file()
     assert (workdir / "release.zip.tmp").is_dir()
     assert (workdir / "release.zip.tmp" / "file.txt").read_bytes() == b"INSIDE DIR\n"
+
+
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Windows does not support POSIX file permissions"
+)
+def test_archive_creates_standard_file_permissions(committed, run, workdir):
+    result = run("archive", "-o", "release.zip", "HEAD")
+    assert result.code == 0
+    mask = os.umask(0)
+    os.umask(mask)
+    expected_mode = 0o666 & ~mask
+    actual_mode = (workdir / "release.zip").stat().st_mode & 0o777
+    assert actual_mode == expected_mode

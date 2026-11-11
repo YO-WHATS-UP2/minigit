@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import gzip
 import io
+import os
 import stat
 import tarfile
 import tempfile
@@ -191,6 +192,11 @@ def run(args: argparse.Namespace, repo: Repository | None) -> int:
     try:
         with tmp_file as out:
             _WRITERS[archive_format](out, items, timestamp)
+        # NamedTemporaryFile creates files as 0600. Restore standard file
+        # permissions honoring umask before replacing the output.
+        mask = os.umask(0)
+        os.umask(mask)
+        os.chmod(tmp, 0o666 & ~mask)
         tmp.replace(output)
     except OSError as error:
         raise MinigitError(f"cannot write '{args.output}': {error.strerror or error}") from error
