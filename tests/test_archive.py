@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import itertools
+import os
+import sys
 import tarfile
 import time
 import zipfile
@@ -203,3 +205,61 @@ def test_failure_leaves_no_half_written_file(repo, run, workdir):
     assert "unsupported file mode 120000" in result.err
     assert (workdir / "keep.zip").read_bytes() == b"previous good archive"
     assert not (workdir / "keep.zip.tmp").exists()
+
+
+def test_archive_preserves_preexisting_tmp_file(committed, run, workdir):
+    (workdir / "release.zip.tmp").write_bytes(b"UNRELATED NOTES\n")
+
+    result = run("archive", "-o", "release.zip", "HEAD")
+    assert result.code == 0
+    assert (workdir / "release.zip").is_file()
+    assert (workdir / "release.zip.tmp").read_bytes() == b"UNRELATED NOTES\n"
+
+
+def test_failure_preserves_preexisting_tmp_file(repo, run, workdir):
+    sha = _commit_tree(repo, run, [(FILE_MODE, "a.txt", b"a\n"), ("120000", "link", b"a\n")])
+    (workdir / "fail.zip.tmp").write_bytes(b"UNRELATED NOTES\n")
+
+    result = run("archive", "-o", "fail.zip", sha)
+    assert result.code == 128
+    assert (workdir / "fail.zip.tmp").read_bytes() == b"UNRELATED NOTES\n"
+
+
+def test_archive_preserves_symlink_at_tmp_path(committed, run, workdir):
+    target = workdir / "target.txt"
+    target.write_bytes(b"TARGET CONTENT\n")
+    symlink = workdir / "release.tar.tmp"
+    try:
+        symlink.symlink_to(target)
+    except (OSError, NotImplementedError):
+        pytest.skip("symlinks not supported on this platform")
+
+    result = run("archive", "-o", "release.tar", "HEAD")
+    assert result.code == 0
+    assert (workdir / "release.tar").is_file()
+    assert symlink.is_symlink()
+    assert target.read_bytes() == b"TARGET CONTENT\n"
+
+
+def test_archive_preserves_preexisting_directory_at_tmp_path(committed, run, workdir):
+    (workdir / "release.zip.tmp").mkdir()
+    (workdir / "release.zip.tmp" / "file.txt").write_bytes(b"INSIDE DIR\n")
+
+    result = run("archive", "-o", "release.zip", "HEAD")
+    assert result.code == 0
+    assert (workdir / "release.zip").is_file()
+    assert (workdir / "release.zip.tmp").is_dir()
+    assert (workdir / "release.zip.tmp" / "file.txt").read_bytes() == b"INSIDE DIR\n"
+
+
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Windows does not support POSIX file permissions"
+)
+def test_archive_creates_standard_file_permissions(committed, run, workdir):
+    result = run("archive", "-o", "release.zip", "HEAD")
+    assert result.code == 0
+    mask = os.umask(0)
+    os.umask(mask)
+    expected_mode = 0o666 & ~mask
+    actual_mode = (workdir / "release.zip").stat().st_mode & 0o777
+    assert actual_mode == expected_mode
