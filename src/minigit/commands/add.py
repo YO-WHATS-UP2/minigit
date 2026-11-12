@@ -1,7 +1,12 @@
 """minigit add: stage file contents for the next commit.
 
 For each file, ``add`` stores its content as a blob object and records
-``path -> blob sha`` in the index.
+``path -> blob sha`` in the index. Staged entries whose files no longer
+exist are removed, so ``add`` stages deletions like Git does.
+
+``--all`` stages the whole repository from any directory, ``--dry-run``
+and ``--verbose`` report ``add '<path>'`` / ``remove '<path>'`` for the
+changes that reach the index — the dry run stages nothing.
 """
 
 import argparse
@@ -11,7 +16,7 @@ from pathlib import Path
 
 from minigit.errors import MinigitError
 from minigit.index import Index, IndexEntry
-from minigit.objects import EXEC_MODE, FILE_MODE, write_object
+from minigit.objects import EXEC_MODE, FILE_MODE, hash_object, write_object
 from minigit.repo import Repository
 from minigit.worktree import IGNORE_FILE, ignore_patterns, is_ignored, iter_files, repo_relative
 
@@ -20,26 +25,49 @@ HELP = "Add file contents to the staging area"
 
 
 def configure(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("paths", nargs="+", help="files or directories to stage")
+    parser.add_argument("paths", nargs="*", help="files or directories to stage")
+    parser.add_argument(
+        "-A", "--all", action="store_true", help="stage the whole repository, from any directory"
+    )
+    parser.add_argument(
+        "-n", "--dry-run", action="store_true", help="show what would be staged, without staging it"
+    )
+    parser.add_argument(
+        "-v", "--verbose", action="store_true", help="show what is staged as it happens"
+    )
 
 
 def run(args: argparse.Namespace, repo: Repository | None) -> int:
     assert repo is not None
+    if not args.paths and not args.all:
+        raise MinigitError("nothing specified, nothing added")
     index = Index.load(repo)
     patterns = ignore_patterns(repo)
     ignored = []
-    for raw in args.paths:
-        _stage_deletions(index, repo, raw)
+    report = args.dry_run or args.verbose
+    for raw in args.paths or [str(repo.worktree)]:
+        _stage_deletions(index, repo, raw, report, args.dry_run)
         if not Path(raw).exists():
             continue
         if _is_ignored(repo, raw, index, patterns):
             ignored.append(raw)
             continue
         for path in _expand(repo, raw, index):
-            sha = write_object(repo, (repo.worktree / path).read_bytes(), "blob")
+            data = (repo.worktree / path).read_bytes()
             mode = _mode_for(repo, path, index)
-            index.add(IndexEntry(mode, sha, path))
-    index.save(repo)
+            # A file Git would not change is not reported either, not even by -v.
+            entry = index.get(path)
+            if entry is not None and entry.mode == mode:
+                sha = hash_object(data, "blob")
+                if entry.sha == sha:
+                    continue
+            if report:
+                print(f"add '{path}'")
+            if not args.dry_run:
+                sha = write_object(repo, data, "blob")
+                index.add(IndexEntry(mode, sha, path))
+    if not args.dry_run:
+        index.save(repo)
     # Like Git, stage everything else first and only then complain.
     if ignored:
         raise MinigitError(
@@ -69,7 +97,7 @@ def _is_ignored(repo, raw, index, patterns):
     return is_ignored(relative, patterns, is_dir=Path(raw).is_dir())
 
 
-def _stage_deletions(index, repo, raw):
+def _stage_deletions(index, repo, raw, report=False, dry_run=False):
     """Remove staged entries under ``raw`` whose files no longer exist on disk.
 
     Raises if ``raw`` doesn't exist and nothing staged matches it.
@@ -82,7 +110,10 @@ def _stage_deletions(index, repo, raw):
         and not (repo.worktree / e.path).exists()
     ]
     for path in deleted:
-        index.remove(path)
+        if report:
+            print(f"remove '{path}'")
+        if not dry_run:
+            index.remove(path)
     if not deleted and not Path(raw).exists():
         raise MinigitError(f"pathspec '{raw}' did not match any files")
 

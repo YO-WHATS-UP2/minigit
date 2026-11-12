@@ -70,7 +70,12 @@ def test_line_break_in_path_via_add_command(repo):
     (repo.worktree / "ok.txt").write_text("y")
     add = discover()["add"].run
     with pytest.raises(MinigitError, match="line breaks"):
-        add(argparse.Namespace(paths=["we\nird.txt", "ok.txt"]), repo)
+        add(
+            argparse.Namespace(
+                paths=["we\nird.txt", "ok.txt"], all=False, dry_run=False, verbose=False
+            ),
+            repo,
+        )
     # The staging area stays usable: nothing was written for the bad name.
     assert list(Index.load(repo)) == []
     assert (repo.worktree / ".minigit" / "minigit-index").exists() is False
