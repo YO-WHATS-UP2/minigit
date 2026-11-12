@@ -261,6 +261,54 @@ def test_add_stages_deletion_of_removed_file(repo, run, write):
     assert [e.path for e in Index.load(repo)] == ["keep.txt"]
 
 
+def test_add_nothing_specified(repo, run):
+    result = run("add")
+    assert result.code == 128
+    assert "nothing specified" in result.err
+
+
+def test_add_all_stages_the_whole_repository_from_a_subdirectory(repo, run, write):
+    write("top.txt", "top")
+    write("src/app.py", "app")
+    run("add", ".")
+    (repo.worktree / "src").mkdir(exist_ok=True)  # src exists since write() made it
+    (repo.worktree / "src" / "app.py").unlink()
+    write("top2.txt", "new")
+    os.chdir(repo.worktree / "src")
+    assert run("add", "-A").code == 0
+    assert [e.path for e in Index.load(repo)] == ["top.txt", "top2.txt"]
+
+
+def test_add_dry_run_reports_and_stages_nothing(repo, run, write):
+    write("hello.txt", "hello\n")
+    write("keep.txt", "keep\n")
+    run("add", ".")
+    (repo.worktree / "hello.txt").unlink()
+    write("new.txt", "new\n")
+    result = run("add", "--dry-run", ".")
+    assert "add 'new.txt'" in result.out
+    assert "remove 'hello.txt'" in result.out
+    assert [e.path for e in Index.load(repo)] == ["hello.txt", "keep.txt"]
+
+
+def test_add_verbose_reports_while_staging(repo, run, write):
+    write("hello.txt", "hello\n")
+    write("gone.txt", "gone\n")
+    run("add", ".")
+    (repo.worktree / "gone.txt").unlink()
+    write("new.txt", "new\n")
+    result = run("add", "-v", ".")
+    assert "add 'new.txt'" in result.out
+    assert "remove 'gone.txt'" in result.out
+    assert [e.path for e in Index.load(repo)] == ["hello.txt", "new.txt"]
+
+
+def test_add_is_silent_about_unchanged_files(repo, run, write):
+    write("hello.txt", "hello\n")
+    run("add", ".")
+    assert run("add", "-v", ".").out == ""
+
+
 def test_add_updates_changed_file(repo, run, write):
     write("hello.txt", "hello\n")
     run("add", "hello.txt")
