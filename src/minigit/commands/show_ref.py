@@ -9,12 +9,8 @@ HELP = "List the references stored in the repository"
 
 
 def configure(parser):
-    parser.add_argument(
-        "--heads", action="store_true", help="only list refs under refs/heads"
-    )
-    parser.add_argument(
-        "--tags", action="store_true", help="only list refs under refs/tags"
-    )
+    parser.add_argument("--heads", action="store_true", help="only list refs under refs/heads")
+    parser.add_argument("--tags", action="store_true", help="only list refs under refs/tags")
     parser.add_argument(
         "--verify",
         metavar="<ref>",
