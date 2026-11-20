@@ -14,7 +14,7 @@ Thanks for being here! This guide takes you from zero to a merged pull request. 
 3. **Create a virtual environment and install:**
    ```bash
    python -m venv .venv
-   source .venv/bin/activate        # Windows: .venv\Scripts\activate
+   source .venv/bin/activate        # Windows: .venv\\Scripts\\activate
    pip install -e ".[dev]"
    ```
 4. **Check everything works:**
@@ -117,6 +117,20 @@ Then open a PR on GitHub **against `main`** and fill in the template:
   git rebase upstream/main           # or: git merge upstream/main
   ```
 - Once CI is green and the review is approved, a mentor merges it. 🎉
+
+## 7. How to release (maintainers)
+
+1. Update `__version__` in `src/minigit/__init__.py` and merge that version change into `main`.
+2. From the updated `main`, create and push a matching version tag:
+   ```bash
+   git tag v0.2.0
+   git push origin v0.2.0
+   ```
+   The tag must be exactly `v` followed by the package version (for example, `v0.2.0`).
+3. The **Release** GitHub Actions workflow checks the tag, builds the wheel and source distribution with `python -m build`, installs the wheel into an isolated directory, and runs the test suite against that installed wheel.
+4. If the checks pass, the workflow creates a GitHub Release with automatically generated release notes and attaches the `.whl` and `.tar.gz` files.
+
+The workflow only creates GitHub Releases. It does **not** publish to PyPI.
 
 ## Getting help
 
